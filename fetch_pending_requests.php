@@ -10,7 +10,8 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role'] ?? '') !== 'adm
 $type = isset($_GET['type']) ? $_GET['type'] : 'office';
 
 if ($type === 'office') {
-    $pending = $conn->query("\n        SELECT r.request_group_id, u.fullname, r.department, r.purpose, r.request_date,
+    $pending = $conn->query("
+        SELECT r.request_group_id, u.fullname, r.department, r.purpose, r.request_date,
                GROUP_CONCAT(CONCAT(i.item_name, ' (x', r.quantity, ')') SEPARATOR '<br>') AS items_summary
         FROM supply_requests r 
         JOIN users u ON r.user_id = u.id 
@@ -20,7 +21,8 @@ if ($type === 'office') {
         ORDER BY r.request_date DESC
     ");
 } else {
-    $pending = $conn->query("\n        SELECT r.request_group_id, u.fullname, r.department, r.purpose, r.request_date,
+    $pending = $conn->query("
+        SELECT r.request_group_id, u.fullname, r.department, r.purpose, r.request_date,
                GROUP_CONCAT(CONCAT(m.item_name, ' (x', r.quantity, ')') SEPARATOR '<br>') AS items_summary
         FROM maintenance_requests r 
         JOIN users u ON r.user_id = u.id 
@@ -45,13 +47,12 @@ while ($row = $pending->fetch_assoc()): ?>
         <td><?= htmlspecialchars($row['purpose']) ?></td>
         <td><?= date('Y-m-d H:i', strtotime($row['request_date'])) ?></td>
         <td>
-            <!-- Form now submits to admin_dashboard.php so actions are handled there. -->
-            <form method="POST" action="admin_dashboard.php" class="d-inline">
+            <form method="POST" class="d-inline">
                 <input type="hidden" name="group_id" value="<?= htmlspecialchars($row['request_group_id']) ?>">
                 <input type="hidden" name="type" value="<?= $type ?>">
-                <input type="hidden" name="action_request" value="1">
-                <button type="submit" name="action" value="Approved" class="btn btn-sm btn-success">Approve</button>
-                <button type="submit" name="action" value="Rejected" class="btn btn-sm btn-danger">Reject</button>
+                <button type="submit" name="action_request" value="1" onclick="this.form.action.value='Approved'" class="btn btn-sm btn-success">Approve</button>
+                <button type="submit" name="action_request" value="1" onclick="this.form.action.value='Rejected'" class="btn btn-sm btn-danger">Reject</button>
+                <input type="hidden" name="action" value="">
             </form>
         </td>
     </tr>
