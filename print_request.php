@@ -15,10 +15,10 @@ if (empty($group_id)) {
 
 // Kunin ang mga detalye ng request batay sa request_group_id
 $stmt = $conn->prepare("
-    SELECT r.*, u.fullname AS user_fullname, i.item_name, i.unit 
-    FROM supply_requests r 
-    LEFT JOIN users u ON r.user_id = u.id 
-    LEFT JOIN items i ON r.item_id = i.id 
+    SELECT r.*, u.fullname AS user_fullname, i.item_name, i.unit
+    FROM supply_requests r
+    LEFT JOIN users u ON r.user_id = u.id
+    LEFT JOIN items i ON r.item_id = i.id
     WHERE r.request_group_id = ?
 ");
 $stmt->bind_param("s", $group_id);
@@ -37,6 +37,14 @@ while ($row = $result->fetch_assoc()) {
         $first_row = $row;
     }
     $items[] = $row;
+}
+
+if (($first_row['status'] ?? '') !== 'Approved') {
+    die("<div style='font-family:sans-serif; text-align:center; margin-top:50px;'>
+            <h2 style='color:red;'>Hindi pa pwedeng i-print!</h2>
+            <p>Ang request na ito ay kasalukuyang <strong>" . htmlspecialchars($first_row['status'] ?? '') . "</strong>. Ang mga na-approve lamang na request ang pwedeng i-print.</p>
+            <a href='user_dashboard.php'>Bumalik sa Dashboard</a>
+         </div>");
 }
 ?>
 
@@ -109,7 +117,7 @@ while ($row = $result->fetch_assoc()) {
             margin-bottom: -1px;
         }
 
-        table.form-table th, 
+        table.form-table th,
         table.form-table td {
             border: 1px solid #000;
             padding: 4px 6px;
@@ -213,11 +221,11 @@ while ($row = $result->fetch_assoc()) {
             </tr>
         </thead>
         <tbody>
-            <?php 
-            $max_rows = 18; 
+            <?php
+            $max_rows = 18;
             $item_count = count($items);
-            
-            foreach ($items as $item): 
+
+            foreach ($items as $item):
             ?>
                 <tr>
                     <td class="text-center"><?= htmlspecialchars($item['quantity']) ?></td>

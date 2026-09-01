@@ -12,12 +12,12 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role'] ?? '') !== 'adm
 if (isset($_GET['fetch_requests']) && $_GET['fetch_requests'] == '1') {
     $type = $_GET['type'] ?? 'office';
     $req_table = ($type === 'maintenance') ? 'maintenance_requests' : 'supply_requests';
-    
+
     $requests = $conn->query("
-        SELECT request_group_id, requisitioner_name, department, purpose, COUNT(*) as total_items, MAX(id) as max_id 
-        FROM {$req_table} 
-        WHERE status = 'Pending' 
-        GROUP BY request_group_id, requisitioner_name, department, purpose 
+        SELECT request_group_id, requisitioner_name, department, purpose, COUNT(*) as total_items, MAX(id) as max_id
+        FROM {$req_table}
+        WHERE status = 'Pending'
+        GROUP BY request_group_id, requisitioner_name, department, purpose
         ORDER BY max_id DESC
     ");
 
@@ -46,27 +46,27 @@ if (isset($_GET['fetch_requests']) && $_GET['fetch_requests'] == '1') {
 if (isset($_GET['fetch_request_details']) && $_GET['fetch_request_details'] == '1') {
     $group_id = $_GET['group_id'] ?? '';
     $type = $_GET['type'] ?? 'office';
-    
+
     $req_table = ($type === 'maintenance') ? 'maintenance_requests' : 'supply_requests';
     $item_table = ($type === 'maintenance') ? 'maintenance_items' : 'items';
-    
+
     $stmt = $conn->prepare("
-        SELECT r.id as req_id, r.quantity, r.item_id, i.item_name, i.unit, i.actual_stocks 
-        FROM {$req_table} r 
-        JOIN {$item_table} i ON r.item_id = i.id 
+        SELECT r.id as req_id, r.quantity, r.item_id, i.item_name, i.unit, i.actual_stocks
+        FROM {$req_table} r
+        JOIN {$item_table} i ON r.item_id = i.id
         WHERE r.request_group_id = ? AND r.status = 'Pending'
     ");
     $stmt->bind_param("s", $group_id);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     if ($result && $result->num_rows > 0) {
         echo '<form id="editRequestItemsForm" class="ajax-form">';
         echo '<input type="hidden" name="action_request" value="1">';
         echo '<input type="hidden" name="action" id="modal_action_type" value="Approved">';
         echo '<input type="hidden" name="group_id" value="' . htmlspecialchars($group_id) . '">';
         echo '<input type="hidden" name="type" value="' . htmlspecialchars($type) . '">';
-        
+
         echo '<div class="table-responsive"><table class="table table-bordered align-middle mb-0">';
         echo '<thead class="table-light"><tr><th>Item Name</th><th>Unit</th><th>Requested Qty (Editable)</th><th>Current Stock</th></tr></thead><tbody>';
         while($row = $result->fetch_assoc()) {
@@ -177,12 +177,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_request'])) {
             $stmt_rej_rem->bind_param("s", $group_id);
             $stmt_rej_rem->execute();
 
+            // Magpadala ng abiso / notification sa user
+            $stmt_u = $conn->prepare("SELECT user_id FROM {$req_table} WHERE request_group_id = ? LIMIT 1");
+            $stmt_u->bind_param("s", $group_id);
+            $stmt_u->execute();
+            $user_res = $stmt_u->get_result()->fetch_assoc();
+            if ($user_res && isset($user_res['user_id'])) {
+                $target_user_id = intval($user_res['user_id']);
+                $notif_msg = "Ang iyong " . ($type === 'maintenance' ? 'maintenance' : 'office supply') . " request ($group_id) ay na-aprubahan na!";
+                $stmt_notif = $conn->prepare("INSERT INTO notifications (user_id, message, is_read) VALUES (?, ?, 0)");
+                $stmt_notif->bind_param("is", $target_user_id, $notif_msg);
+                $stmt_notif->execute();
+            }
+
             sendResponse("Matagumpay na na-update at na-approve ang Request ID: " . htmlspecialchars($group_id) . "!", true);
         }
     } elseif ($action === 'Rejected') {
+        // Kunin ang user_id bago mag-update ng status
+        $stmt_u = $conn->prepare("SELECT user_id FROM {$req_table} WHERE request_group_id = ? LIMIT 1");
+        $stmt_u->bind_param("s", $group_id);
+        $stmt_u->execute();
+        $user_res = $stmt_u->get_result()->fetch_assoc();
+
         $stmt_rej = $conn->prepare("UPDATE {$req_table} SET status = 'Rejected' WHERE request_group_id = ? AND status = 'Pending'");
         $stmt_rej->bind_param("s", $group_id);
         $stmt_rej->execute();
+
+        if ($user_res && isset($user_res['user_id'])) {
+            $target_user_id = intval($user_res['user_id']);
+            $notif_msg = "Ang iyong " . ($type === 'maintenance' ? 'maintenance' : 'office supply') . " request ($group_id) ay tinanggihan / rejected.";
+            $stmt_notif = $conn->prepare("INSERT INTO notifications (user_id, message, is_read) VALUES (?, ?, 0)");
+            $stmt_notif->bind_param("is", $target_user_id, $notif_msg);
+            $stmt_notif->execute();
+        }
 
         sendResponse("Na-reject ang Request ID: " . htmlspecialchars($group_id) . "!", true);
     }
@@ -221,7 +248,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_stock'])) {
     $item_id = intval($_POST['item_id'] ?? 0);
     $item_type = $_POST['item_type'] ?? 'office';
     $new_stock = intval($_POST['new_stock'] ?? 0);
-    
+
     $item_table = ($item_type === 'maintenance') ? 'maintenance_items' : 'items';
     $new_image = uploadItemImage($_FILES['item_image']);
 
@@ -240,24 +267,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_stock'])) {
         $stmt_up = $conn->prepare("UPDATE {$item_table} SET actual_stocks = ? WHERE id = ?");
         $stmt_up->bind_param("ii", $new_stock, $item_id);
     }
-    
+
     $stmt_up->execute();
     sendResponse("Matagumpay na na-update ang inventory item!", true);
 }
 
 $office_requests = $conn->query("
-    SELECT request_group_id, requisitioner_name, department, purpose, COUNT(*) as total_items, MAX(id) as max_id 
-    FROM supply_requests 
-    WHERE status = 'Pending' 
-    GROUP BY request_group_id, requisitioner_name, department, purpose 
+    SELECT request_group_id, requisitioner_name, department, purpose, COUNT(*) as total_items, MAX(id) as max_id
+    FROM supply_requests
+    WHERE status = 'Pending'
+    GROUP BY request_group_id, requisitioner_name, department, purpose
     ORDER BY max_id DESC
 ");
 
 $maint_requests = $conn->query("
-    SELECT request_group_id, requisitioner_name, department, purpose, COUNT(*) as total_items, MAX(id) as max_id 
-    FROM maintenance_requests 
-    WHERE status = 'Pending' 
-    GROUP BY request_group_id, requisitioner_name, department, purpose 
+    SELECT request_group_id, requisitioner_name, department, purpose, COUNT(*) as total_items, MAX(id) as max_id
+    FROM maintenance_requests
+    WHERE status = 'Pending'
+    GROUP BY request_group_id, requisitioner_name, department, purpose
     ORDER BY max_id DESC
 ");
 
@@ -418,15 +445,15 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
                                     <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($item['unit']) ?></span></td>
                                     <td class="fw-bold fs-6"><?= $item['actual_stocks'] ?></td>
                                     <td>
-                                        <?= ($item['actual_stocks'] > 0) 
-                                            ? '<span class="badge bg-success-subtle text-success border border-success-subtle badge-stock">With Stock</span>' 
+                                        <?= ($item['actual_stocks'] > 0)
+                                            ? '<span class="badge bg-success-subtle text-success border border-success-subtle badge-stock">With Stock</span>'
                                             : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle badge-stock">Out of Stock</span>' ?>
                                     </td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3 update-btn" 
-                                                data-id="<?= $item['id'] ?>" 
-                                                data-name="<?= htmlspecialchars($item['item_name'], ENT_QUOTES) ?>" 
-                                                data-stocks="<?= $item['actual_stocks'] ?>" 
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3 update-btn"
+                                                data-id="<?= $item['id'] ?>"
+                                                data-name="<?= htmlspecialchars($item['item_name'], ENT_QUOTES) ?>"
+                                                data-stocks="<?= $item['actual_stocks'] ?>"
                                                 data-type="office">
                                             <i class="fa-solid fa-pen-to-square me-1"></i> Update
                                         </button>
@@ -521,15 +548,15 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
                                     <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($item['unit']) ?></span></td>
                                     <td class="fw-bold fs-6"><?= $item['actual_stocks'] ?></td>
                                     <td>
-                                        <?= ($item['actual_stocks'] > 0) 
-                                            ? '<span class="badge bg-success-subtle text-success border border-success-subtle badge-stock">With Stock</span>' 
+                                        <?= ($item['actual_stocks'] > 0)
+                                            ? '<span class="badge bg-success-subtle text-success border border-success-subtle badge-stock">With Stock</span>'
                                             : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle badge-stock">Out of Stock</span>' ?>
                                     </td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-warning text-dark rounded-pill px-3 fw-bold update-btn" 
-                                                data-id="<?= $item['id'] ?>" 
-                                                data-name="<?= htmlspecialchars($item['item_name'], ENT_QUOTES) ?>" 
-                                                data-stocks="<?= $item['actual_stocks'] ?>" 
+                                        <button class="btn btn-sm btn-outline-warning text-dark rounded-pill px-3 fw-bold update-btn"
+                                                data-id="<?= $item['id'] ?>"
+                                                data-name="<?= htmlspecialchars($item['item_name'], ENT_QUOTES) ?>"
+                                                data-stocks="<?= $item['actual_stocks'] ?>"
                                                 data-type="maintenance">
                                             <i class="fa-solid fa-pen-to-square me-1"></i> Update
                                         </button>
@@ -581,7 +608,7 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
       <div class="modal-body p-4">
         <input type="hidden" name="item_id" id="update_item_id">
         <input type="hidden" name="item_type" id="update_item_type">
-        
+
         <div class="mb-3">
             <label class="form-label fw-semibold">Item Name</label>
             <input type="text" id="update_item_name" class="form-control bg-light" readonly>
@@ -773,7 +800,7 @@ function pollRequests() {
         type: 'GET',
         success: function(data) {
             $('#office-requests-tbody').html(data);
-            
+
             let tempDiv = $('<div>').html(data);
             let currentCount = tempDiv.find('tr').length;
             if (tempDiv.find('td[colspan]').length > 0) currentCount = 0;
@@ -790,7 +817,7 @@ function pollRequests() {
         type: 'GET',
         success: function(data) {
             $('#maint-requests-tbody').html(data);
-            
+
             let tempDiv = $('<div>').html(data);
             let currentCount = tempDiv.find('tr').length;
             if (tempDiv.find('td[colspan]').length > 0) currentCount = 0;

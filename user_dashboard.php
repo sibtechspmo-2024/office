@@ -17,7 +17,7 @@ $user_id = intval($_SESSION['user_id']);
 // --- AJAX HANDLER PARA SA NOTIFICATIONS (GET) ---
 if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_notifications') {
     header('Content-Type: application/json');
-    
+
     $notif_stmt = $conn->prepare("SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 10");
     $notif_stmt->bind_param("i", $user_id);
     $notif_stmt->execute();
@@ -29,8 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
     $unread_count = $unread_stmt->get_result()->fetch_assoc()['unread_count'] ?? 0;
 
     echo json_encode([
-        'status' => 'success', 
-        'notifications' => $notifications, 
+        'status' => 'success',
+        'notifications' => $notifications,
         'unread_count' => $unread_count
     ]);
     exit;
@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['mark_read'])) {
 // --- AJAX HANDLER PARA SA SUBMIT REQUEST ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_supply'])) {
     header('Content-Type: application/json');
-    
+
     $request_type = $_POST['request_type'] ?? 'office';
     $requisitioner_name = trim($_POST['requisitioner_name'] ?? '');
     $department = trim($_POST['department'] ?? '');
@@ -62,12 +62,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_supply'])) {
     if (!empty($item_ids) && is_array($item_ids)) {
         $prefix = ($request_type === 'maintenance') ? 'MNT-' : 'REQ-';
         $request_group_id = $prefix . date('YmdHis') . '-' . rand(100, 999);
-        
+
         $request_table = ($request_type === 'maintenance') ? 'maintenance_requests' : 'supply_requests';
         $item_table = ($request_type === 'maintenance') ? 'maintenance_items' : 'items';
 
         $stmt = $conn->prepare("INSERT INTO {$request_table} (request_group_id, user_id, requisitioner_name, department, item_id, quantity, purpose, date_needed) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $update_stock_stmt = $conn->prepare("UPDATE {$item_table} SET actual_stocks = actual_stocks - ? WHERE id = ? AND actual_stocks >= ?");
+        $check_stock_stmt = $conn->prepare("SELECT actual_stocks FROM {$item_table} WHERE id = ?");
 
         $inserted_count = 0;
         $conn->begin_transaction();
@@ -78,15 +78,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_supply'])) {
                 $qty = intval($quantities[$index] ?? 0);
 
                 if ($item_id > 0 && $qty > 0) {
+                    $check_stock_stmt->bind_param("i", $item_id);
+                    $check_stock_stmt->execute();
+                    $stock_res = $check_stock_stmt->get_result()->fetch_assoc();
+
+                    if (!$stock_res || $stock_res['actual_stocks'] < $qty) {
+                        throw new Exception("Kulang ang available stock para sa napiling item.");
+                    }
+
                     $stmt->bind_param("sississs", $request_group_id, $user_id, $requisitioner_name, $department, $item_id, $qty, $purpose, $date_needed);
                     $stmt->execute();
 
-                    $update_stock_stmt->bind_param("iii", $qty, $item_id, $qty);
-                    $update_stock_stmt->execute();
-
-                    if ($update_stock_stmt->affected_rows === 0) {
-                        throw new Exception("Kulang ang available stock para sa napiling item.");
-                    }
                     $inserted_count++;
                 }
             }
@@ -189,7 +191,7 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
 
     <form id="requestForm">
         <input type="hidden" name="request_supply" value="1">
-        
+
         <div class="row g-4">
             <!-- LEFT: PRODUCT CATALOG -->
             <div class="col-lg-8">
@@ -336,7 +338,7 @@ function loadNotifications() {
         if (data.status === 'success') {
             const badge = document.getElementById('notification-badge');
             const list = document.getElementById('notification-list');
-            
+
             // Unread Count Badge
             if (data.unread_count > 0) {
                 badge.textContent = data.unread_count;
@@ -348,13 +350,13 @@ function loadNotifications() {
             // Mag-check ng BAGO at UNREAD notification para sa APPROVAL Push Notification
             if (data.notifications.length > 0) {
                 const latest = data.notifications[0];
-                
+
                 if (!isInitialized) {
                     lastNotifId = latest.id;
                     isInitialized = true;
                 } else if (latest.id > lastNotifId && latest.is_read == 0) {
                     const msgLower = latest.message.toLowerCase();
-                    
+
                     // Lalabas ang Desktop Push Notification kapag ang message ay patungkol sa APPROVAL
                     if (msgLower.includes('approve') || msgLower.includes('aprubado') || msgLower.includes('na-aprubahan')) {
                         if ("Notification" in window && Notification.permission === "granted") {
@@ -406,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- CART & ITEM MANAGEMENT SCRIPTS ---
 function switchCategory(type) {
-    cart = {}; 
+    cart = {};
     renderCart();
     document.getElementById('searchInput').value = '';
     filterItems();
@@ -447,9 +449,9 @@ function updateQty(id, change) {
     renderCart();
 }
 
-function removeFromCart(id) { 
-    delete cart[id]; 
-    renderCart(); 
+function removeFromCart(id) {
+    delete cart[id];
+    renderCart();
 }
 
 function renderCart() {
