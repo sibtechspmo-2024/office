@@ -962,6 +962,7 @@ $low_stock_count = $low_office_stock + $low_maint_stock;
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4">
+        <input type="hidden" name="update_stock" value="1">
         <input type="hidden" name="item_id" id="update_item_id">
         <input type="hidden" name="item_type" id="update_item_type">
 
@@ -1115,11 +1116,12 @@ $(document).on('submit', '.ajax-form', function(e) {
         url: window.location.pathname,
         type: 'POST',
         data: formData,
+        dataType: 'json',
         processData: false,
         contentType: false,
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         success: function(response) {
-            if (response.success) {
+            if (response && response.success) {
                 $('.modal').modal('hide');
                 $('#alert-container').html(`
                     <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
@@ -1127,9 +1129,14 @@ $(document).on('submit', '.ajax-form', function(e) {
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 `);
-                pollRequests();
-            } else {
+                setTimeout(function() {
+                    location.reload();
+                }, 1000);
+            } else if (response && response.message) {
                 alert(response.message);
+            } else {
+                alert('Matagumpay na na-update!');
+                location.reload();
             }
         },
         error: function() {
