@@ -36,6 +36,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
     exit;
 }
 
+// --- AJAX HANDLER PARA SA LIVE CATALOG STOCKS (GET) ---
+if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_stocks') {
+    header('Content-Type: application/json');
+    $office = $conn->query("SELECT id, actual_stocks FROM items")->fetch_all(MYSQLI_ASSOC);
+    $maint = $conn->query("SELECT id, actual_stocks FROM maintenance_items")->fetch_all(MYSQLI_ASSOC);
+    echo json_encode([
+        'status' => 'success',
+        'office' => $office,
+        'maint' => $maint
+    ]);
+    exit;
+}
+
 // --- AJAX HANDLER PARA SA MARK AS READ (POST) ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['mark_read'])) {
     header('Content-Type: application/json');
@@ -231,7 +244,7 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                                         <small class="text-muted d-block mb-2">Unit: <?= htmlspecialchars($item['unit']) ?></small>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-                                        <span class="badge badge-sibtech">Stock: <?= $item['actual_stocks'] ?></span>
+                                        <span class="badge badge-sibtech stock-badge-office" data-item-id="<?= $item['id'] ?>">Stock: <?= $item['actual_stocks'] ?></span>
                                         <button type="button" class="btn btn-sm btn-outline-sibtech"><i class="bi bi-plus-lg"></i> Add</button>
                                     </div>
                                 </div>
@@ -259,7 +272,7 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                                         <small class="text-muted d-block mb-2">Unit: <?= htmlspecialchars($item['unit']) ?></small>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-                                        <span class="badge badge-sibtech">Stock: <?= $item['actual_stocks'] ?></span>
+                                        <span class="badge badge-sibtech stock-badge-maint" data-item-id="<?= $item['id'] ?>">Stock: <?= $item['actual_stocks'] ?></span>
                                         <button type="button" class="btn btn-sm btn-outline-sibtech"><i class="bi bi-plus-lg"></i> Add</button>
                                     </div>
                                 </div>
@@ -387,6 +400,32 @@ function loadNotifications() {
     }).catch(err => console.error('Error fetching notifications:', err));
 }
 
+// Live Stock Polling para sa User Catalog
+function loadLiveStocks() {
+    fetch('user_dashboard.php?action=get_stocks')
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            if (data.office) {
+                data.office.forEach(item => {
+                    const badge = document.querySelector(`.stock-badge-office[data-item-id="${item.id}"]`);
+                    if (badge) {
+                        badge.textContent = `Stock: ${item.actual_stocks}`;
+                    }
+                });
+            }
+            if (data.maint) {
+                data.maint.forEach(item => {
+                    const badge = document.querySelector(`.stock-badge-maint[data-item-id="${item.id}"]`);
+                    if (badge) {
+                        badge.textContent = `Stock: ${item.actual_stocks}`;
+                    }
+                });
+            }
+        }
+    }).catch(err => console.error('Error fetching live stocks:', err));
+}
+
 function markAllAsRead() {
     let formData = new FormData();
     formData.append('mark_read', '1');
@@ -403,7 +442,11 @@ function markAllAsRead() {
 document.addEventListener('DOMContentLoaded', () => {
     requestNotificationPermission();
     loadNotifications();
-    setInterval(loadNotifications, 4000);
+    loadLiveStocks();
+    setInterval(() => {
+        loadNotifications();
+        loadLiveStocks();
+    }, 4000);
 });
 
 // --- CART & ITEM MANAGEMENT SCRIPTS ---
@@ -510,6 +553,7 @@ document.getElementById('requestForm').addEventListener('submit', function(e) {
             renderCart();
             this.reset();
             loadNotifications();
+            loadLiveStocks();
             setTimeout(() => location.reload(), 1500);
         } else {
             showAlert(data.message, 'danger');
