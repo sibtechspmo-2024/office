@@ -36,7 +36,9 @@ while ($row = $result->fetch_assoc()) {
     if (!$first_row) {
         $first_row = $row;
     }
-    $items[] = $row;
+    if (intval($row['quantity']) > 0) {
+        $items[] = $row;
+    }
 }
 
 if (($first_row['status'] ?? '') !== 'Approved') {

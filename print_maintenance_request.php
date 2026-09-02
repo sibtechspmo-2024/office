@@ -46,7 +46,7 @@ $stmt_items = $conn->prepare("
     SELECT r.quantity, m.unit, m.item_name 
     FROM maintenance_requests r 
     JOIN maintenance_items m ON r.item_id = m.id 
-    WHERE r.request_group_id = ?
+    WHERE r.request_group_id = ? AND r.quantity > 0
 ");
 $stmt_items->bind_param("s", $group_id);
 $stmt_items->execute();
