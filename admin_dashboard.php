@@ -27,11 +27,11 @@ if (isset($_GET['fetch_requests']) && $_GET['fetch_requests'] == '1') {
             echo '<td class="fw-bold text-logo-blue">#' . htmlspecialchars($row['request_group_id']) . '</td>';
             echo '<td>' . htmlspecialchars($row['requisitioner_name']) . '</td>';
             echo '<td><span class="badge bg-light text-dark border">' . htmlspecialchars($row['department']) . '</span></td>';
-            echo '<td><span class="badge bg-secondary">' . $row['total_items'] . ' item(s)</span></td>';
+            echo '<td><span class="badge bg-secondary rounded-pill">' . $row['total_items'] . ' item(s)</span></td>';
             echo '<td>' . htmlspecialchars($row['purpose']) . '</td>';
             echo '<td class="text-end">';
             echo '<button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openViewRequestModal(\'' . htmlspecialchars($row['request_group_id'], ENT_QUOTES) . '\', \'' . $type . '\')">';
-            echo '<i class="fa-solid fa-pen-to-square me-1"></i> Edit / Review';
+            echo '<i class="fa-solid fa-pen-to-square me-1"></i> Review Order';
             echo '</button>';
             echo '</td>';
             echo '</tr>';
@@ -161,14 +161,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_request'])) {
             $stmt_rej_rem->bind_param("s", $group_id);
             $stmt_rej_rem->execute();
 
-            sendResponse("Matagumpay na na-update at na-approve ang Request ID: " . htmlspecialchars($group_id) . "!", true);
+            sendResponse("Matagumpay na na-update at na-approve ang Order ID: " . htmlspecialchars($group_id) . "!", true);
         }
     } elseif ($action === 'Rejected') {
         $stmt_rej = $conn->prepare("UPDATE {$req_table} SET status = 'Rejected' WHERE request_group_id = ? AND status = 'Pending'");
         $stmt_rej->bind_param("s", $group_id);
         $stmt_rej->execute();
 
-        sendResponse("Na-reject ang Request ID: " . htmlspecialchars($group_id) . "!", true);
+        sendResponse("Na-reject ang Order ID: " . htmlspecialchars($group_id) . "!", true);
     }
 }
 
@@ -187,6 +187,12 @@ $maint_requests = $conn->query("
     GROUP BY request_group_id, requisitioner_name, department, purpose
     ORDER BY max_id DESC
 ");
+
+$office_pending_count = $office_requests ? $office_requests->num_rows : 0;
+$maint_pending_count = $maint_requests ? $maint_requests->num_rows : 0;
+
+$office_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM items WHERE actual_stocks <= 0")->fetch_assoc()['cnt'] ?? 0;
+$maint_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_items WHERE actual_stocks <= 0")->fetch_assoc()['cnt'] ?? 0;
 ?>
 
 <!DOCTYPE html>
@@ -194,30 +200,34 @@ $maint_requests = $conn->query("
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - SIBTECH Portal</title>
+    <title>Admin E-Commerce Portal - SIBTECH</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/admin_dashboard.css">
 </head>
 <body>
 
+<!-- E-COMMERCE ADMIN TOP BAR -->
 <nav class="navbar navbar-expand-lg navbar-dark navbar-admin py-3 shadow-sm">
     <div class="container">
         <a class="navbar-brand fw-bold d-flex align-items-center text-white" href="admin_dashboard.php">
-            <img src="logo.jpg" alt="SIBTECH Logo" class="navbar-brand-logo rounded-circle border border-white">
-            <span>SIBTECH <span class="fw-light opacity-75">Admin Control</span></span>
+            <img src="logo.jpg" alt="SIBTECH Logo" class="navbar-brand-logo rounded-circle border border-2 border-white">
+            <div class="lh-1">
+                <span class="fs-5 d-block">SIBTECH ADMIN</span>
+                <small class="fw-light opacity-75" style="font-size: 0.72rem;">E-Commerce Store Management</small>
+            </div>
         </a>
         <div class="d-flex flex-wrap align-items-center gap-2">
             <a href="admin_office.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
-                <i class="fa-solid fa-box-open me-1"></i> Office Supplies Page
+                <i class="fa-solid fa-box-open me-1"></i> Office Page
             </a>
             <a href="admin_maintenance.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
-                <i class="fa-solid fa-wrench me-1"></i> Maintenance Supplies Page
+                <i class="fa-solid fa-wrench me-1"></i> Maintenance Page
             </a>
             <a href="in_stock.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
                 <i class="fa-solid fa-boxes-stacked me-1"></i> In Stock Items
             </a>
-            <a href="export_out_of_stock.php?type=all" class="btn btn-success btn-sm rounded-pill px-3 fw-bold">
+            <a href="export_out_of_stock.php?type=all" class="btn btn-logo-accent btn-sm rounded-pill px-3">
                 <i class="fa-solid fa-file-excel me-1"></i> Export Out of Stock (Excel)
             </a>
             <a href="logout.php" class="btn btn-outline-light btn-sm rounded-pill px-3 ms-1">
@@ -237,16 +247,57 @@ $maint_requests = $conn->query("
         <?php endif; ?>
     </div>
 
+    <!-- E-COMMERCE STATS DASHBOARD -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card stat-card-blue">
+                <div>
+                    <small class="text-white-50 uppercase fw-bold">Pending Office Orders</small>
+                    <h3 class="fw-bold mb-0 mt-1"><?= $office_pending_count ?></h3>
+                </div>
+                <div class="stat-icon"><i class="fa-solid fa-clipboard-check"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card stat-card-gold">
+                <div>
+                    <small class="text-dark-50 uppercase fw-bold">Pending Maintenance Orders</small>
+                    <h3 class="fw-bold mb-0 mt-1 text-dark"><?= $maint_pending_count ?></h3>
+                </div>
+                <div class="stat-icon text-dark"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card stat-card-red">
+                <div>
+                    <small class="text-white-50 uppercase fw-bold">Out-of-Stock Office Items</small>
+                    <h3 class="fw-bold mb-0 mt-1"><?= $office_out_of_stock ?></h3>
+                </div>
+                <div class="stat-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card stat-card-green">
+                <div>
+                    <small class="text-white-50 uppercase fw-bold">Out-of-Stock Maint Items</small>
+                    <h3 class="fw-bold mb-0 mt-1"><?= $maint_out_of_stock ?></h3>
+                </div>
+                <div class="stat-icon"><i class="fa-solid fa-warehouse"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABS NAVIGATION -->
     <div class="card mb-4 p-2">
         <ul class="nav nav-pills nav-fill" id="adminTabs" role="tablist">
             <li class="nav-item">
                 <button class="nav-link active" id="office-req-tab" data-bs-toggle="tab" data-bs-target="#office-req" type="button">
-                    <i class="fa-solid fa-clipboard-list me-1"></i> Office Requests
+                    <i class="fa-solid fa-cart-shopping me-1"></i> Office Orders
                 </button>
             </li>
             <li class="nav-item">
                 <button class="nav-link" id="maint-req-tab" data-bs-toggle="tab" data-bs-target="#maint-req" type="button">
-                    <i class="fa-solid fa-screwdriver-wrench me-1"></i> Maintenance Requests
+                    <i class="fa-solid fa-wrench me-1"></i> Maintenance Orders
                 </button>
             </li>
         </ul>
@@ -257,16 +308,16 @@ $maint_requests = $conn->query("
         <div class="tab-pane fade show active" id="office-req">
             <div class="card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold text-dark mb-0">Pending Office Supply Requests</h5>
+                    <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-box-open text-logo-blue me-2"></i>Pending Office Supply Orders</h5>
                     <a href="admin_office.php" class="btn btn-sm btn-logo-primary rounded-pill px-3">
-                        <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Go to Office Page & Inventory
+                        <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Open Office Page & Inventory
                     </a>
                 </div>
                 <div class="table-responsive table-container">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th>Group ID</th>
+                                <th>Order ID</th>
                                 <th>Requisitioner</th>
                                 <th>Dept</th>
                                 <th>Total Items</th>
@@ -281,18 +332,18 @@ $maint_requests = $conn->query("
                                         <td class="fw-bold text-logo-blue">#<?= htmlspecialchars($row['request_group_id']) ?></td>
                                         <td><?= htmlspecialchars($row['requisitioner_name']) ?></td>
                                         <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($row['department']) ?></span></td>
-                                        <td><span class="badge bg-secondary"><?= $row['total_items'] ?> item(s)</span></td>
+                                        <td><span class="badge bg-secondary rounded-pill"><?= $row['total_items'] ?> item(s)</span></td>
                                         <td><?= htmlspecialchars($row['purpose']) ?></td>
                                         <td class="text-end">
                                             <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openViewRequestModal('<?= htmlspecialchars($row['request_group_id'], ENT_QUOTES) ?>', 'office')">
-                                                <i class="fa-solid fa-pen-to-square me-1"></i> Edit / Review
+                                                <i class="fa-solid fa-pen-to-square me-1"></i> Review Order
                                             </button>
                                         </td>
                                     </tr>
                                 <?php endwhile; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">Walang nakabinbing Office Supply Requests.</td>
+                                    <td colspan="6" class="text-center text-muted py-4">Walang nakabinbing Office Supply Orders.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -305,16 +356,16 @@ $maint_requests = $conn->query("
         <div class="tab-pane fade" id="maint-req">
             <div class="card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold text-dark mb-0">Pending Maintenance Supply Requests</h5>
+                    <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-wrench text-logo-blue me-2"></i>Pending Maintenance Supply Orders</h5>
                     <a href="admin_maintenance.php" class="btn btn-sm btn-logo-primary rounded-pill px-3">
-                        <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Go to Maintenance Page & Inventory
+                        <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Open Maintenance Page & Inventory
                     </a>
                 </div>
                 <div class="table-responsive table-container">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th>Group ID</th>
+                                <th>Order ID</th>
                                 <th>Requisitioner</th>
                                 <th>Dept</th>
                                 <th>Total Items</th>
@@ -329,18 +380,18 @@ $maint_requests = $conn->query("
                                         <td class="fw-bold text-logo-blue">#<?= htmlspecialchars($row['request_group_id']) ?></td>
                                         <td><?= htmlspecialchars($row['requisitioner_name']) ?></td>
                                         <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($row['department']) ?></span></td>
-                                        <td><span class="badge bg-secondary"><?= $row['total_items'] ?> item(s)</span></td>
+                                        <td><span class="badge bg-secondary rounded-pill"><?= $row['total_items'] ?> item(s)</span></td>
                                         <td><?= htmlspecialchars($row['purpose']) ?></td>
                                         <td class="text-end">
                                             <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openViewRequestModal('<?= htmlspecialchars($row['request_group_id'], ENT_QUOTES) ?>', 'maintenance')">
-                                                <i class="fa-solid fa-pen-to-square me-1"></i> Edit / Review
+                                                <i class="fa-solid fa-pen-to-square me-1"></i> Review Order
                                             </button>
                                         </td>
                                     </tr>
                                 <?php endwhile; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">Walang nakabinbing Maintenance Supply Requests.</td>
+                                    <td colspan="6" class="text-center text-muted py-4">Walang nakabinbing Maintenance Supply Orders.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -351,12 +402,12 @@ $maint_requests = $conn->query("
     </div>
 </div>
 
-<!-- Modal para sa Edit & Review Request Items (Na may Editable Quantities) -->
+<!-- Modal para sa Edit & Review Request Items -->
 <div class="modal fade" id="viewRequestModal" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 shadow">
       <div class="modal-header text-white" style="background-color: var(--logo-blue);">
-        <h5 class="modal-title fs-6 fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Edit & Review Request Items</h5>
+        <h5 class="modal-title fs-6 fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Edit & Review Order Items</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4">
@@ -366,11 +417,11 @@ $maint_requests = $conn->query("
       </div>
       <div class="modal-footer border-0 bg-light justify-content-between">
         <button type="button" class="btn btn-outline-danger rounded-pill px-3" onclick="submitRejectRequest()">
-            <i class="fa-solid fa-xmark me-1"></i> Reject Request
+            <i class="fa-solid fa-xmark me-1"></i> Reject Order
         </button>
 
-        <button type="submit" form="editRequestItemsForm" class="btn btn-success rounded-pill px-4" onclick="$('#modal_action_type').val('Approved'); return confirm('I-approve na ang mga item na ito na may binagong quantity?');">
-            <i class="fa-solid fa-check me-1"></i> Approve Request
+        <button type="submit" form="editRequestItemsForm" class="btn btn-success rounded-pill px-4" onclick="$('#modal_action_type').val('Approved'); return confirm('I-approve na ang order na ito?');">
+            <i class="fa-solid fa-check me-1"></i> Approve Order
         </button>
       </div>
     </div>
@@ -380,19 +431,16 @@ $maint_requests = $conn->query("
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Hilingin ang pahintulot para sa Desktop Notification sa unang pasok
 document.addEventListener("DOMContentLoaded", function() {
     if (window.Notification && Notification.permission !== "granted") {
         Notification.requestPermission();
     }
 });
 
-// View request modal setup at pag-fetch ng request items gamit ang AJAX
 function openViewRequestModal(groupId, type) {
     $('#viewRequestModalBody').html('<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin fs-3 text-primary"></i> <p class="mt-2 text-muted">Loading request details...</p></div>');
     new bootstrap.Modal(document.getElementById('viewRequestModal')).show();
 
-    // Kunin ang mga detalye ng request mula sa server
     $.ajax({
         url: window.location.pathname + '?fetch_request_details=1&group_id=' + encodeURIComponent(groupId) + '&type=' + encodeURIComponent(type),
         type: 'GET',
@@ -406,13 +454,12 @@ function openViewRequestModal(groupId, type) {
 }
 
 function submitRejectRequest() {
-    if (confirm('Sigurado ka bang i-reject ang buong request na ito?')) {
+    if (confirm('Sigurado ka bang i-reject ang buong order na ito?')) {
         $('#modal_action_type').val('Rejected');
         $('#editRequestItemsForm').submit();
     }
 }
 
-// AJAX Form Handler
 $(document).on('submit', '.ajax-form', function(e) {
     e.preventDefault();
     var form = this;
@@ -454,7 +501,6 @@ $(document).on('submit', '.ajax-form', function(e) {
 let lastOfficeCount = null;
 let lastMaintCount = null;
 
-// Function para sa Computer/Browser Notification at Tunog
 function triggerDesktopNotification(title, message) {
     if (window.Notification && Notification.permission === "granted") {
         new Notification(title, {
@@ -467,7 +513,6 @@ function triggerDesktopNotification(title, message) {
     audio.play().catch(e => console.log('Audio autoplay restricted by browser'));
 }
 
-// AJAX Polling para kusang lumitaw ang data at mag-notif bawat 5 segundo
 function pollRequests() {
     $.ajax({
         url: window.location.pathname + '?fetch_requests=1&type=office',
@@ -480,7 +525,7 @@ function pollRequests() {
             if (tempDiv.find('td[colspan]').length > 0) currentCount = 0;
 
             if (lastOfficeCount !== null && currentCount > lastOfficeCount) {
-                triggerDesktopNotification("Bagong Office Request!", "May pumasok na bagong request para sa Office Supplies.");
+                triggerDesktopNotification("Bagong Office Order!", "May pumasok na bagong order para sa Office Supplies.");
             }
             lastOfficeCount = currentCount;
         }
@@ -497,14 +542,13 @@ function pollRequests() {
             if (tempDiv.find('td[colspan]').length > 0) currentCount = 0;
 
             if (lastMaintCount !== null && currentCount > lastMaintCount) {
-                triggerDesktopNotification("Bagong Maintenance Request!", "May pumasok na bagong request para sa Maintenance.");
+                triggerDesktopNotification("Bagong Maintenance Order!", "May pumasok na bagong order para sa Maintenance.");
             }
             lastMaintCount = currentCount;
         }
     });
 }
 
-// Patakbuhin ang polling bawat 5 segundo
 setInterval(pollRequests, 5000);
 </script>
 </body>

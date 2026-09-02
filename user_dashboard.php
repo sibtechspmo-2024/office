@@ -130,24 +130,28 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIBTECH - Supply Order Portal</title>
+    <title>SIBTECH - E-Commerce Supply Portal</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <link rel="stylesheet" href="css/user_dashboard.css">
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark navbar-sibtech sticky-top shadow-sm">
+<!-- TOP E-COMMERCE NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark navbar-ecommerce sticky-top shadow-sm">
     <div class="container-fluid px-4">
         <a class="navbar-brand fw-bold text-white d-flex align-items-center" href="user_dashboard.php">
-            <img src="logo.jpg" alt="SIBTECH Logo" class="navbar-brand-logo rounded-circle border border-white">
-            <span>SIBTECH <span class="fw-light opacity-75">Supply Order Portal</span></span>
+            <img src="logo.jpg" alt="SIBTECH Logo" class="navbar-brand-logo rounded-circle border border-2 border-white">
+            <div class="lh-1">
+                <span class="fs-5 d-block">SIBTECH STORE</span>
+                <small class="fw-light opacity-75" style="font-size: 0.72rem;">Central Supply Room Portal</small>
+            </div>
         </a>
-        <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center gap-2">
             <!-- NOTIFICATION DROPDOWN -->
-            <div class="dropdown me-3">
-                <button class="btn btn-outline-light btn-sm position-relative dropdown-toggle" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-bell-fill"></i>
+            <div class="dropdown me-2">
+                <button class="btn btn-outline-light btn-sm position-relative dropdown-toggle rounded-pill px-3" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-bell-fill me-1"></i> Abiso
                     <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="notificationDropdown" style="width: 320px; max-height: 400px; overflow-y: auto;" id="notification-list">
@@ -157,15 +161,39 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                 </ul>
             </div>
 
-            <a href="request_history.php" class="btn btn-outline-light btn-sm me-3"><i class="bi bi-clock-history me-1"></i>History</a>
-            <span class="text-white me-3 d-none d-sm-inline"><i class="bi bi-person-circle me-1"></i><?= htmlspecialchars($default_fullname) ?></span>
-            <a href="logout.php" class="btn btn-outline-light btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
+            <a href="request_history.php" class="btn btn-outline-light btn-sm rounded-pill px-3 me-2">
+                <i class="bi bi-bag-check-fill me-1"></i> My Orders
+            </a>
+            <span class="text-white me-2 d-none d-md-inline small fw-semibold">
+                <i class="bi bi-person-circle me-1"></i><?= htmlspecialchars($default_fullname) ?>
+            </span>
+            <a href="logout.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                <i class="bi bi-box-arrow-right me-1"></i> Logout
+            </a>
         </div>
     </div>
 </nav>
 
 <div class="container-fluid px-4 py-4">
-    <div id="alert-box" class="alert d-none shadow-sm"></div>
+    <!-- ALERT BOX -->
+    <div id="alert-box" class="alert d-none shadow-sm rounded-3"></div>
+
+    <!-- HERO STORE BANNERS & SEARCH -->
+    <div class="hero-banner">
+        <div class="row align-items-center">
+            <div class="col-lg-7 mb-3 mb-lg-0">
+                <span class="badge bg-warning text-dark fw-bold mb-2 px-3 py-1 rounded-pill">Central Supply Store</span>
+                <h2 class="mb-1">Mag-order ng Inyong Supplies online!</h2>
+                <p class="mb-0 text-white-50">Pumili ng mga kagamitan para sa Office at Maintenance at isumite ang inyong order request.</p>
+            </div>
+            <div class="col-lg-5">
+                <div class="input-group hero-search-box">
+                    <input type="text" id="searchInput" class="form-control form-control-lg" placeholder="Maghanap ng supply..." onkeyup="filterItems()">
+                    <button class="btn" type="button"><i class="bi bi-search me-1"></i> Search</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <form id="requestForm">
         <input type="hidden" name="request_supply" value="1">
@@ -173,45 +201,51 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
         <div class="row g-4">
             <!-- LEFT: PRODUCT CATALOG -->
             <div class="col-lg-8">
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <!-- CATEGORY NAVIGATION PILLS -->
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4 p-3 bg-white rounded-3 shadow-sm">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold text-muted small me-2"><i class="bi bi-funnel-fill me-1"></i>Category:</span>
                         <div class="btn-group" role="group">
                             <input type="radio" class="btn-check" name="request_type" id="cat_office" value="office" checked onchange="switchCategory('office')">
-                            <label class="btn btn-outline-sibtech fw-bold" for="cat_office"><i class="bi bi-box-seam me-1"></i>Office Supplies</label>
+                            <label class="btn category-pill" for="cat_office"><i class="bi bi-box-seam me-1"></i>Office Supplies</label>
 
                             <input type="radio" class="btn-check" name="request_type" id="cat_maint" value="maintenance" onchange="switchCategory('maintenance')">
-                            <label class="btn btn-outline-sibtech fw-bold" for="cat_maint"><i class="bi bi-tools me-1"></i>Maintenance Supplies</label>
-                        </div>
-
-                        <div class="input-group" style="max-width: 300px;">
-                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                            <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Maghanap ng supply..." onkeyup="filterItems()">
+                            <label class="btn category-pill" for="cat_maint"><i class="bi bi-tools me-1"></i>Maintenance Supplies</label>
                         </div>
                     </div>
+                    <span class="badge bg-light text-dark border px-3 py-2" id="available-count-badge">Available Items</span>
                 </div>
 
                 <!-- Office Grid -->
                 <div id="office-grid" class="row g-3">
                     <?php if(empty($office_items)): ?>
-                        <div class="col-12 text-center py-5 text-muted">Walang available na Office Supply Items.</div>
+                        <div class="col-12 text-center py-5 text-muted">
+                            <i class="bi bi-box-seam fs-1 text-secondary d-block mb-2"></i>
+                            Walang available na Office Supply Items sa kasalukuyan.
+                        </div>
                     <?php endif; ?>
                     <?php foreach($office_items as $item): ?>
                         <div class="col-sm-6 col-md-4 product-item" data-name="<?= strtolower(htmlspecialchars($item['item_name'])) ?>">
-                            <div class="card h-100 item-card shadow-sm" onclick="addToCart(<?= $item['id'] ?>, '<?= htmlspecialchars(addslashes($item['item_name'])) ?>', '<?= htmlspecialchars($item['unit']) ?>', <?= $item['actual_stocks'] ?>)">
-                                <div class="card-body text-center p-3 d-flex flex-column justify-content-between">
+                            <div class="product-card">
+                                <div class="img-wrapper">
+                                    <span class="product-badge-stock bg-success text-white">Stock: <?= $item['actual_stocks'] ?></span>
+                                    <?php if(!empty($item['image']) && file_exists('uploads/' . $item['image'])): ?>
+                                        <img src="uploads/<?= htmlspecialchars($item['image']) ?>" class="product-img" alt="<?= htmlspecialchars($item['item_name']) ?>">
+                                    <?php else: ?>
+                                        <div class="text-secondary text-center">
+                                            <i class="bi bi-box fs-1 d-block opacity-50"></i>
+                                            <small class="small text-muted">No Image</small>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="card-body">
                                     <div>
-                                        <?php if(!empty($item['image']) && file_exists('uploads/' . $item['image'])): ?>
-                                            <img src="uploads/<?= htmlspecialchars($item['image']) ?>" class="img-fluid rounded mb-2 product-img" alt="<?= htmlspecialchars($item['item_name']) ?>">
-                                        <?php else: ?>
-                                            <div class="badge-sibtech rounded-circle d-inline-flex p-3 mb-2"><i class="bi bi-box fs-3"></i></div>
-                                        <?php endif; ?>
-                                        <h6 class="card-title fw-bold text-dark text-truncate mb-1"><?= htmlspecialchars($item['item_name']) ?></h6>
-                                        <small class="text-muted d-block mb-2">Unit: <?= htmlspecialchars($item['unit']) ?></small>
+                                        <div class="product-title"><?= htmlspecialchars($item['item_name']) ?></div>
+                                        <div class="product-unit mb-3">Unit: <span class="badge bg-light text-dark border"><?= htmlspecialchars($item['unit']) ?></span></div>
                                     </div>
-                                    <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-                                        <span class="badge badge-sibtech">Stock: <?= $item['actual_stocks'] ?></span>
-                                        <button type="button" class="btn btn-sm btn-outline-sibtech"><i class="bi bi-plus-lg"></i> Add</button>
-                                    </div>
+                                    <button type="button" class="btn btn-add-cart py-2" onclick="addToCart(<?= $item['id'] ?>, '<?= htmlspecialchars(addslashes($item['item_name'])) ?>', '<?= htmlspecialchars($item['unit']) ?>', <?= $item['actual_stocks'] ?>)">
+                                        <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -221,25 +255,33 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                 <!-- Maintenance Grid -->
                 <div id="maint-grid" class="row g-3 d-none">
                     <?php if(empty($maint_items)): ?>
-                        <div class="col-12 text-center py-5 text-muted">Walang available na Maintenance Items.</div>
+                        <div class="col-12 text-center py-5 text-muted">
+                            <i class="bi bi-tools fs-1 text-secondary d-block mb-2"></i>
+                            Walang available na Maintenance Items sa kasalukuyan.
+                        </div>
                     <?php endif; ?>
                     <?php foreach($maint_items as $item): ?>
                         <div class="col-sm-6 col-md-4 product-item" data-name="<?= strtolower(htmlspecialchars($item['item_name'])) ?>">
-                            <div class="card h-100 item-card shadow-sm" onclick="addToCart(<?= $item['id'] ?>, '<?= htmlspecialchars(addslashes($item['item_name'])) ?>', '<?= htmlspecialchars($item['unit']) ?>', <?= $item['actual_stocks'] ?>)">
-                                <div class="card-body text-center p-3 d-flex flex-column justify-content-between">
+                            <div class="product-card">
+                                <div class="img-wrapper">
+                                    <span class="product-badge-stock bg-success text-white">Stock: <?= $item['actual_stocks'] ?></span>
+                                    <?php if(!empty($item['image']) && file_exists('uploads/' . $item['image'])): ?>
+                                        <img src="uploads/<?= htmlspecialchars($item['image']) ?>" class="product-img" alt="<?= htmlspecialchars($item['item_name']) ?>">
+                                    <?php else: ?>
+                                        <div class="text-secondary text-center">
+                                            <i class="bi bi-wrench fs-1 d-block opacity-50"></i>
+                                            <small class="small text-muted">No Image</small>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="card-body">
                                     <div>
-                                        <?php if(!empty($item['image']) && file_exists('uploads/' . $item['image'])): ?>
-                                            <img src="uploads/<?= htmlspecialchars($item['image']) ?>" class="img-fluid rounded mb-2 product-img" alt="<?= htmlspecialchars($item['item_name']) ?>">
-                                        <?php else: ?>
-                                            <div class="badge-sibtech rounded-circle d-inline-flex p-3 mb-2"><i class="bi bi-wrench fs-3"></i></div>
-                                        <?php endif; ?>
-                                        <h6 class="card-title fw-bold text-dark text-truncate mb-1"><?= htmlspecialchars($item['item_name']) ?></h6>
-                                        <small class="text-muted d-block mb-2">Unit: <?= htmlspecialchars($item['unit']) ?></small>
+                                        <div class="product-title"><?= htmlspecialchars($item['item_name']) ?></div>
+                                        <div class="product-unit mb-3">Unit: <span class="badge bg-light text-dark border"><?= htmlspecialchars($item['unit']) ?></span></div>
                                     </div>
-                                    <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-                                        <span class="badge badge-sibtech">Stock: <?= $item['actual_stocks'] ?></span>
-                                        <button type="button" class="btn btn-sm btn-outline-sibtech"><i class="bi bi-plus-lg"></i> Add</button>
-                                    </div>
+                                    <button type="button" class="btn btn-add-cart py-2" onclick="addToCart(<?= $item['id'] ?>, '<?= htmlspecialchars(addslashes($item['item_name'])) ?>', '<?= htmlspecialchars($item['unit']) ?>', <?= $item['actual_stocks'] ?>)">
+                                        <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -247,26 +289,26 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                 </div>
             </div>
 
-            <!-- RIGHT: BASKET -->
+            <!-- RIGHT: SHOPPING CART & CHECKOUT -->
             <div class="col-lg-4">
-                <div class="card border-0 shadow-sm cart-sticky">
-                    <div class="card-header bg-sibtech-header text-white d-flex justify-content-between align-items-center py-3">
-                        <h5 class="card-title mb-0 fw-bold"><i class="bi bi-basket me-2"></i>Request Basket</h5>
-                        <span class="badge bg-white text-dark rounded-pill fw-bold" id="cart-count">0 items</span>
+                <div class="card cart-card">
+                    <div class="cart-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-cart3 me-2"></i>Shopping Cart</h5>
+                        <span class="badge bg-warning text-dark rounded-pill fw-bold fs-6" id="cart-count">0 items</span>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-secondary">Requisitioner Name</label>
                             <input type="text" name="requisitioner_name" class="form-control form-control-sm" value="<?= htmlspecialchars($default_fullname) ?>" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-secondary">Department / Unit</label>
-                            <input type="text" name="department" class="form-control form-control-sm" placeholder="Halimbawa: SPMO, HR, etc." required>
+                            <input type="text" name="department" class="form-control form-control-sm" placeholder="Halimbawa: SPMO, HR, IT" required>
                         </div>
                         <div class="row g-2 mb-3">
                             <div class="col-7">
                                 <label class="form-label fw-bold small text-secondary">Purpose</label>
-                                <input type="text" name="purpose" class="form-control form-control-sm" placeholder="Layunin ng request" required>
+                                <input type="text" name="purpose" class="form-control form-control-sm" placeholder="Layunin ng order" required>
                             </div>
                             <div class="col-5">
                                 <label class="form-label fw-bold small text-secondary">Date Needed</label>
@@ -275,16 +317,16 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                         </div>
 
                         <hr class="my-3 text-muted">
-                        <h6 class="fw-bold mb-2 small text-uppercase text-muted">Selected Items:</h6>
+                        <h6 class="fw-bold mb-2 small text-uppercase text-muted"><i class="bi bi-bag-check me-1"></i>Selected Order Items:</h6>
                         <div id="cart-list" class="cart-items-container mb-3">
                             <p class="text-center text-muted my-4 small" id="empty-cart-msg">
                                 <i class="bi bi-cart-x fs-2 d-block text-secondary mb-1"></i>
-                                Walang napiling item.
+                                Walang napiling item sa cart.
                             </p>
                         </div>
 
-                        <button type="submit" id="submitBtn" class="btn btn-sibtech w-100 fw-bold py-2 shadow-sm" disabled>
-                            <i class="bi bi-send me-1"></i> Submit Order Request
+                        <button type="submit" id="submitBtn" class="btn btn-checkout w-100 shadow-sm" disabled>
+                            <i class="bi bi-send-fill me-1"></i> Place Order Request
                         </button>
                     </div>
                 </div>
@@ -299,7 +341,6 @@ let cart = {};
 let lastNotifId = 0;
 let isInitialized = false;
 
-// Request Permission para sa Browser Push Notification
 function requestNotificationPermission() {
     if ("Notification" in window) {
         if (Notification.permission !== "granted" && Notification.permission !== "denied") {
@@ -308,7 +349,6 @@ function requestNotificationPermission() {
     }
 }
 
-// Live Notification Polling
 function loadNotifications() {
     fetch('user_dashboard.php?action=get_notifications')
     .then(res => res.json())
@@ -317,7 +357,6 @@ function loadNotifications() {
             const badge = document.getElementById('notification-badge');
             const list = document.getElementById('notification-list');
 
-            // Unread Count Badge
             if (data.unread_count > 0) {
                 badge.textContent = data.unread_count;
                 badge.classList.remove('d-none');
@@ -325,20 +364,16 @@ function loadNotifications() {
                 badge.classList.add('d-none');
             }
 
-            // Mag-check ng BAGO at UNREAD notification para sa APPROVAL Push Notification
             if (data.notifications.length > 0) {
                 const latest = data.notifications[0];
-
                 if (!isInitialized) {
                     lastNotifId = latest.id;
                     isInitialized = true;
                 } else if (latest.id > lastNotifId && latest.is_read == 0) {
                     const msgLower = latest.message.toLowerCase();
-
-                    // Lalabas ang Desktop Push Notification kapag ang message ay patungkol sa APPROVAL
                     if (msgLower.includes('approve') || msgLower.includes('aprubado') || msgLower.includes('na-aprubahan')) {
                         if ("Notification" in window && Notification.permission === "granted") {
-                            new Notification("Request Approved! 🎉", {
+                            new Notification("Order Approved! 🎉", {
                                 body: latest.message,
                                 icon: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
                             });
@@ -348,7 +383,6 @@ function loadNotifications() {
                 }
             }
 
-            // Dropdown Items Render
             let html = `<li><h6 class="dropdown-header d-flex justify-content-between align-items-center"><span>Mga Abiso</span> <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small" onclick="markAllAsRead()">Mark all as read</button></h6></li>`;
             html += '<li><hr class="dropdown-divider"></li>';
 
@@ -377,14 +411,12 @@ function markAllAsRead() {
     });
 }
 
-// Request permission at simulan ang Polling (bawat 4 na segundo)
 document.addEventListener('DOMContentLoaded', () => {
     requestNotificationPermission();
     loadNotifications();
     setInterval(loadNotifications, 4000);
 });
 
-// --- CART & ITEM MANAGEMENT SCRIPTS ---
 function switchCategory(type) {
     cart = {};
     renderCart();
@@ -410,7 +442,7 @@ function filterItems() {
 function addToCart(id, name, unit, maxStock) {
     if (cart[id]) {
         if (cart[id].qty < maxStock) cart[id].qty++;
-        else showAlert(`Mataas sa available stock (${maxStock}) ang iyong ii-request.`, 'warning');
+        else showAlert(`Mataas sa available stock (${maxStock}) ang iyong ii-order.`, 'warning');
     } else {
         cart[id] = { id, name, unit, qty: 1, maxStock };
     }
@@ -421,7 +453,7 @@ function updateQty(id, change) {
     if (cart[id]) {
         let newQty = cart[id].qty + change;
         if (newQty <= 0) delete cart[id];
-        else if (newQty > cart[id].maxStock) showAlert(`Mataas sa available stock (${cart[id].maxStock}) ang iyong ii-request.`, 'warning');
+        else if (newQty > cart[id].maxStock) showAlert(`Mataas sa available stock (${cart[id].maxStock}) ang iyong ii-order.`, 'warning');
         else cart[id].qty = newQty;
     }
     renderCart();
@@ -439,7 +471,7 @@ function renderCart() {
     document.getElementById('cart-count').textContent = `${keys.length} items`;
 
     if (keys.length === 0) {
-        cartList.innerHTML = `<p class="text-center text-muted my-4 small"><i class="bi bi-cart-x fs-2 d-block text-secondary mb-1"></i>Walang napiling item.</p>`;
+        cartList.innerHTML = `<p class="text-center text-muted my-4 small"><i class="bi bi-cart-x fs-2 d-block text-secondary mb-1"></i>Walang napiling item sa cart.</p>`;
         submitBtn.disabled = true;
         return;
     }
@@ -449,19 +481,17 @@ function renderCart() {
     keys.forEach(id => {
         const item = cart[id];
         html += `
-            <div class="card mb-2 shadow-sm border border-light-subtle">
-                <div class="card-body p-2 d-flex align-items-center justify-content-between">
-                    <input type="hidden" name="item_id[]" value="${item.id}">
-                    <div class="me-2 text-truncate" style="max-width: 130px;">
-                        <span class="fw-bold small d-block text-truncate text-dark">${item.name}</span>
-                        <small class="text-muted" style="font-size: 0.75rem;">${item.unit}</small>
-                    </div>
-                    <div class="d-flex align-items-center gap-1">
-                        <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-0" onclick="updateQty(${item.id}, -1)">-</button>
-                        <input type="number" name="quantity[]" value="${item.qty}" class="form-control form-control-sm text-center p-0" style="width: 42px;" readonly>
-                        <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-0" onclick="updateQty(${item.id}, 1)">+</button>
-                        <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-1" onclick="removeFromCart(${item.id})"><i class="bi bi-x-circle-fill"></i></button>
-                    </div>
+            <div class="cart-item d-flex align-items-center justify-content-between">
+                <input type="hidden" name="item_id[]" value="${item.id}">
+                <div class="me-2 text-truncate" style="max-width: 140px;">
+                    <span class="cart-item-title d-block text-truncate">${item.name}</span>
+                    <small class="text-muted">${item.unit}</small>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-secondary qty-btn" onclick="updateQty(${item.id}, -1)">-</button>
+                    <input type="number" name="quantity[]" value="${item.qty}" class="form-control form-control-sm text-center p-0" style="width: 38px; font-weight: bold;" readonly>
+                    <button type="button" class="btn btn-sm btn-outline-secondary qty-btn" onclick="updateQty(${item.id}, 1)">+</button>
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-1" onclick="removeFromCart(${item.id})"><i class="bi bi-trash-fill"></i></button>
                 </div>
             </div>`;
     });
@@ -470,7 +500,7 @@ function renderCart() {
 
 function showAlert(message, type = 'success') {
     const alertBox = document.getElementById('alert-box');
-    alertBox.className = `alert alert-${type} shadow-sm`;
+    alertBox.className = `alert alert-${type} shadow-sm rounded-3`;
     alertBox.textContent = message;
     alertBox.classList.remove('d-none');
     window.scrollTo({ top: 0, behavior: 'smooth' });

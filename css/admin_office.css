@@ -3,34 +3,38 @@
     --logo-blue-hover: #163f7d;
     --logo-yellow: #f5be16;
     --logo-dark: #111827;
-    --logo-light-bg: #f4f6f9;
+    --logo-light-bg: #f3f4f6;
 }
 
 body {
     background-color: var(--logo-light-bg);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #1f2937;
 }
 
 .navbar-admin {
     background-color: var(--logo-blue) !important;
+    padding: 0.75rem 1rem;
 }
 
 .navbar-brand-logo {
-    width: 38px;
+    width: 42px;
     height: auto;
-    margin-right: 8px;
+    margin-right: 10px;
 }
 
 .card {
     border: none;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    background-color: #ffffff;
 }
 
 .btn-logo-primary {
     background-color: var(--logo-blue);
     color: #ffffff;
     border: none;
+    font-weight: 600;
 }
 
 .btn-logo-primary:hover {
@@ -53,7 +57,7 @@ body {
 .badge-stock {
     font-size: 0.85rem;
     padding: 0.4em 0.8em;
-    border-radius: 6px;
+    border-radius: 50px;
 }
 
 .text-logo-blue {

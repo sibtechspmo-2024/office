@@ -3,79 +3,229 @@
     --logo-blue-hover: #163f7d;
     --logo-yellow: #f5be16;
     --logo-dark: #111827;
-    --logo-light-bg: #f8f9fa;
+    --logo-light-bg: #f3f4f6;
+    --card-shadow: 0 4px 15px rgba(27, 79, 156, 0.08);
+    --card-shadow-hover: 0 10px 25px rgba(27, 79, 156, 0.18);
 }
 
 body {
     background-color: var(--logo-light-bg);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #1f2937;
 }
 
-.navbar-sibtech {
+/* NAVBAR & HEADER */
+.navbar-ecommerce {
     background-color: var(--logo-blue);
+    padding: 0.75rem 1rem;
 }
 
 .navbar-brand-logo {
-    width: 36px;
+    width: 42px;
     height: auto;
-    margin-right: 8px;
+    margin-right: 10px;
+    transition: transform 0.2s ease;
 }
 
-.btn-sibtech {
+.navbar-brand-logo:hover {
+    transform: scale(1.05);
+}
+
+.hero-banner {
+    background: linear-gradient(135deg, #1b4f9c 0%, #0f3266 100%);
+    color: #ffffff;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 20px rgba(27, 79, 156, 0.2);
+}
+
+.hero-banner h2 {
+    font-weight: 700;
+}
+
+.hero-search-box .form-control {
+    border-radius: 50px 0 0 50px;
+    padding-left: 1.25rem;
+    border: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.hero-search-box .btn {
+    border-radius: 0 50px 50px 0;
+    background-color: var(--logo-yellow);
+    color: #111827;
+    font-weight: 600;
+    border: none;
+    padding-right: 1.25rem;
+    padding-left: 1.25rem;
+}
+
+.hero-search-box .btn:hover {
+    background-color: #d9a50b;
+}
+
+/* CATEGORY PILLS */
+.category-pill {
+    border-radius: 50px;
+    padding: 0.5rem 1.25rem;
+    font-weight: 600;
+    border: 2px solid var(--logo-blue);
+    color: var(--logo-blue);
+    background-color: #ffffff;
+    transition: all 0.25s ease;
+}
+
+.category-pill:hover, .btn-check:checked + .category-pill {
     background-color: var(--logo-blue);
     color: #ffffff;
-    border: none;
+    border-color: var(--logo-blue);
+    box-shadow: 0 4px 10px rgba(27, 79, 156, 0.25);
 }
 
-.btn-sibtech:hover {
+/* E-COMMERCE PRODUCT CARDS */
+.product-card {
+    border: none;
+    border-radius: 14px;
+    background-color: #ffffff;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--card-shadow-hover);
+}
+
+.product-card .img-wrapper {
+    position: relative;
+    height: 150px;
+    background-color: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    overflow: hidden;
+}
+
+.product-card .product-img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-img {
+    transform: scale(1.08);
+}
+
+.product-badge-stock {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.35em 0.7em;
+    border-radius: 50px;
+}
+
+.product-card .card-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex-grow: 1;
+}
+
+.product-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #1f2937;
+    margin-bottom: 0.35rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    height: 2.7em;
+}
+
+.product-unit {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.btn-add-cart {
+    background-color: var(--logo-blue);
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.btn-add-cart:hover {
     background-color: var(--logo-blue-hover);
     color: #ffffff;
 }
 
-.btn-outline-sibtech {
-    color: var(--logo-blue);
-    border-color: var(--logo-blue);
+/* SHOPPING CART SIDEBAR */
+.cart-card {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    position: sticky;
+    top: 90px;
+    overflow: hidden;
 }
 
-.btn-outline-sibtech:hover, .btn-check:checked + .btn-outline-sibtech {
+.cart-header {
     background-color: var(--logo-blue);
     color: #ffffff;
-    border-color: var(--logo-blue);
+    padding: 1.1rem 1.25rem;
 }
 
-.item-card {
-    transition: all 0.25s ease;
-    cursor: pointer;
+.cart-item {
+    background-color: #f8fafc;
+    border-radius: 10px;
+    padding: 0.75rem;
+    margin-bottom: 0.65rem;
     border: 1px solid #e2e8f0;
 }
 
-.item-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(27, 79, 156, 0.15);
-    border-color: var(--logo-blue);
+.cart-item-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #1f2937;
 }
 
-.cart-sticky {
-    position: sticky;
-    top: 80px;
+.qty-btn {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-weight: bold;
 }
 
-.cart-items-container {
-    max-height: 280px;
-    overflow-y: auto;
+.btn-checkout {
+    background-color: var(--logo-yellow);
+    color: #111827;
+    font-weight: 700;
+    border: none;
+    padding: 0.75rem;
+    border-radius: 10px;
+    transition: all 0.2s ease;
 }
 
-.bg-sibtech-header {
-    background-color: var(--logo-blue);
-}
-
-.product-img {
-    height: 110px;
-    object-fit: contain;
-}
-
-.badge-sibtech {
-    background-color: rgba(27, 79, 156, 0.1);
-    color: var(--logo-blue);
-    border: 1px solid rgba(27, 79, 156, 0.3);
+.btn-checkout:hover:not(:disabled) {
+    background-color: #d9a50b;
+    color: #111827;
+    box-shadow: 0 4px 12px rgba(245, 190, 22, 0.35);
 }
