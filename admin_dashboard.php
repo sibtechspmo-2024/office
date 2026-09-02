@@ -574,6 +574,7 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4">
+        <input type="hidden" name="update_stock" value="1">
         <input type="hidden" name="item_id" id="update_item_id">
         <input type="hidden" name="item_type" id="update_item_type">
 
@@ -592,7 +593,7 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
       </div>
       <div class="modal-footer border-0 bg-light">
         <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" name="update_stock" class="btn btn-logo-primary rounded-pill px-4">I-save ang Pagbabago</button>
+        <button type="submit" class="btn btn-logo-primary rounded-pill px-4">I-save ang Pagbabago</button>
       </div>
     </form>
   </div>
@@ -722,25 +723,31 @@ $(document).on('submit', '.ajax-form', function(e) {
         url: window.location.pathname,
         type: 'POST',
         data: formData,
+        dataType: 'json',
         processData: false,
         contentType: false,
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         success: function(response) {
-            if (response.success) {
+            if (typeof response === 'string') {
+                try { response = JSON.parse(response); } catch(err) {}
+            }
+            if (response && response.success) {
                 $('.modal').modal('hide');
                 $('#alert-container').html(`
                     <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
-                        <i class="fa-solid fa-circle-check me-2"></i> ${response.message}
+                        <i class="fa-solid fa-circle-check me-2"></i> ${response.message || 'Matagumpay na na-update!'}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 `);
                 pollRequests();
+                setTimeout(function() { location.reload(); }, 1000);
             } else {
-                alert(response.message);
+                var errorMsg = (response && response.message) ? response.message : 'Nagkaroon ng problema sa pag-update.';
+                alert(errorMsg);
             }
         },
         error: function() {
-            alert('May naganap na error sa koneksyon.');
+            alert('May naganap na error sa koneksyon o server.');
         }
     });
 });
