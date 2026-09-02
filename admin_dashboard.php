@@ -263,6 +263,9 @@ $maint_requests = $conn->query("
 
 $office_inventory = $conn->query("SELECT * FROM items ORDER BY item_name ASC");
 $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_name ASC");
+
+$office_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM items WHERE actual_stocks <= 0")->fetch_assoc()['cnt'] ?? 0;
+$maint_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_items WHERE actual_stocks <= 0")->fetch_assoc()['cnt'] ?? 0;
 ?>
 
 <!DOCTYPE html>
@@ -283,12 +286,20 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
             <img src="logo.jpg" alt="SIBTECH Logo" class="navbar-brand-logo rounded-circle border border-white">
             <span>SIBTECH <span class="fw-light opacity-75">Admin Control</span></span>
         </a>
-        <div class="d-flex align-items-center gap-3">
-            <a href="in_stock.php" class="btn btn-outline-light btn-sm rounded-pill px-3 me-2">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <a href="admin_office.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                <i class="fa-solid fa-box-open me-1"></i> Office Page
+            </a>
+            <a href="admin_maintenance.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                <i class="fa-solid fa-wrench me-1"></i> Maintenance Page
+            </a>
+            <a href="in_stock.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
                 <i class="fa-solid fa-boxes-stacked me-1"></i> In Stock Items
             </a>
-            <span class="text-white-50 small d-none d-md-inline">Logged in as Administrator</span>
-            <a href="logout.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
+            <a href="export_out_of_stock.php?type=all" class="btn btn-success btn-sm rounded-pill px-3 fw-bold">
+                <i class="fa-solid fa-file-excel me-1"></i> Export Out of Stock (Excel)
+            </a>
+            <a href="logout.php" class="btn btn-outline-light btn-sm rounded-pill px-3 ms-1">
                 <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
             </a>
         </div>
@@ -334,7 +345,12 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
         <!-- Tab 1: Office Requests -->
         <div class="tab-pane fade show active" id="office-req">
             <div class="card p-4">
-                <h5 class="fw-bold text-dark mb-3">Pending Office Supply Requests</h5>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-dark mb-0">Pending Office Supply Requests</h5>
+                    <a href="admin_office.php" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                        <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Open Separate Office Page
+                    </a>
+                </div>
                 <div class="table-responsive table-container">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
@@ -377,11 +393,19 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
         <!-- Tab 2: Office Inventory -->
         <div class="tab-pane fade" id="office-inv">
             <div class="card p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                     <h5 class="fw-bold text-dark mb-0">Office Supply Inventory</h5>
-                    <button class="btn btn-logo-primary rounded-pill btn-sm px-3" data-bs-toggle="modal" data-bs-target="#addOfficeItemModal">
-                        <i class="fa-solid fa-plus me-1"></i> Dagdag Office Item
-                    </button>
+                    <div class="d-flex gap-2">
+                        <a href="export_out_of_stock.php?type=office" class="btn btn-success rounded-pill btn-sm px-3 fw-bold">
+                            <i class="fa-solid fa-file-excel me-1"></i> Export Out of Stock (Excel)
+                            <?php if($office_out_of_stock > 0): ?>
+                                <span class="badge bg-white text-success ms-1"><?= $office_out_of_stock ?></span>
+                            <?php endif; ?>
+                        </a>
+                        <button class="btn btn-logo-primary rounded-pill btn-sm px-3" data-bs-toggle="modal" data-bs-target="#addOfficeItemModal">
+                            <i class="fa-solid fa-plus me-1"></i> Dagdag Office Item
+                        </button>
+                    </div>
                 </div>
                 <div class="table-responsive table-container">
                     <table class="table table-hover align-middle mb-0">
@@ -437,7 +461,12 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
         <!-- Tab 3: Maintenance Requests -->
         <div class="tab-pane fade" id="maint-req">
             <div class="card p-4">
-                <h5 class="fw-bold text-dark mb-3">Pending Maintenance Supply Requests</h5>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-dark mb-0">Pending Maintenance Supply Requests</h5>
+                    <a href="admin_maintenance.php" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                        <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Open Separate Maintenance Page
+                    </a>
+                </div>
                 <div class="table-responsive table-container">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
@@ -480,11 +509,19 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
         <!-- Tab 4: Maintenance Inventory -->
         <div class="tab-pane fade" id="maint-inv">
             <div class="card p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                     <h5 class="fw-bold text-dark mb-0">Maintenance Inventory</h5>
-                    <button class="btn btn-logo-accent rounded-pill btn-sm px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#addMaintItemModal">
-                        <i class="fa-solid fa-plus me-1"></i> Dagdag Maintenance Item
-                    </button>
+                    <div class="d-flex gap-2">
+                        <a href="export_out_of_stock.php?type=maintenance" class="btn btn-success rounded-pill btn-sm px-3 fw-bold">
+                            <i class="fa-solid fa-file-excel me-1"></i> Export Out of Stock (Excel)
+                            <?php if($maint_out_of_stock > 0): ?>
+                                <span class="badge bg-white text-success ms-1"><?= $maint_out_of_stock ?></span>
+                            <?php endif; ?>
+                        </a>
+                        <button class="btn btn-logo-accent rounded-pill btn-sm px-3 fw-bold text-dark" data-bs-toggle="modal" data-bs-target="#addMaintItemModal">
+                            <i class="fa-solid fa-plus me-1"></i> Dagdag Maintenance Item
+                        </button>
+                    </div>
                 </div>
                 <div class="table-responsive table-container">
                     <table class="table table-hover align-middle mb-0">
