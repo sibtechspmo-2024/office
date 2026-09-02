@@ -1,0 +1,81 @@
+:root {
+    --logo-blue: #1b4f9c;
+    --logo-blue-hover: #163f7d;
+    --logo-yellow: #f5be16;
+    --logo-dark: #111827;
+    --logo-light-bg: #f8f9fa;
+}
+
+body {
+    background-color: var(--logo-light-bg);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar-sibtech {
+    background-color: var(--logo-blue);
+}
+
+.navbar-brand-logo {
+    width: 36px;
+    height: auto;
+    margin-right: 8px;
+}
+
+.btn-sibtech {
+    background-color: var(--logo-blue);
+    color: #ffffff;
+    border: none;
+}
+
+.btn-sibtech:hover {
+    background-color: var(--logo-blue-hover);
+    color: #ffffff;
+}
+
+.btn-outline-sibtech {
+    color: var(--logo-blue);
+    border-color: var(--logo-blue);
+}
+
+.btn-outline-sibtech:hover, .btn-check:checked + .btn-outline-sibtech {
+    background-color: var(--logo-blue);
+    color: #ffffff;
+    border-color: var(--logo-blue);
+}
+
+.item-card {
+    transition: all 0.25s ease;
+    cursor: pointer;
+    border: 1px solid #e2e8f0;
+}
+
+.item-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(27, 79, 156, 0.15);
+    border-color: var(--logo-blue);
+}
+
+.cart-sticky {
+    position: sticky;
+    top: 80px;
+}
+
+.cart-items-container {
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.bg-sibtech-header {
+    background-color: var(--logo-blue);
+}
+
+.product-img {
+    height: 110px;
+    object-fit: contain;
+}
+
+.badge-sibtech {
+    background-color: rgba(27, 79, 156, 0.1);
+    color: var(--logo-blue);
+    border: 1px solid rgba(27, 79, 156, 0.3);
+}

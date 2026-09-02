@@ -17,7 +17,7 @@ $user_id = intval($_SESSION['user_id']);
 // --- AJAX HANDLER PARA SA NOTIFICATIONS (GET) ---
 if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_notifications') {
     header('Content-Type: application/json');
-    
+
     $notif_stmt = $conn->prepare("SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 10");
     $notif_stmt->bind_param("i", $user_id);
     $notif_stmt->execute();
@@ -29,8 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
     $unread_count = $unread_stmt->get_result()->fetch_assoc()['unread_count'] ?? 0;
 
     echo json_encode([
-        'status' => 'success', 
-        'notifications' => $notifications, 
+        'status' => 'success',
+        'notifications' => $notifications,
         'unread_count' => $unread_count
     ]);
     exit;
@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['mark_read'])) {
 // --- AJAX HANDLER PARA SA SUBMIT REQUEST ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_supply'])) {
     header('Content-Type: application/json');
-    
+
     $request_type = $_POST['request_type'] ?? 'office';
     $requisitioner_name = trim($_POST['requisitioner_name'] ?? '');
     $department = trim($_POST['department'] ?? '');
@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_supply'])) {
     if (!empty($item_ids) && is_array($item_ids)) {
         $prefix = ($request_type === 'maintenance') ? 'MNT-' : 'REQ-';
         $request_group_id = $prefix . date('YmdHis') . '-' . rand(100, 999);
-        
+
         $request_table = ($request_type === 'maintenance') ? 'maintenance_requests' : 'supply_requests';
         $item_table = ($request_type === 'maintenance') ? 'maintenance_items' : 'items';
 
@@ -133,35 +133,15 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
     <title>SIBTECH - Supply Order Portal</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <style>
-        :root {
-            --sibtech-primary: #008080;
-            --sibtech-primary-hover: #006666;
-            --sibtech-dark: #0b2545;
-            --sibtech-light-bg: #f4f9f9;
-        }
-        body { background-color: var(--sibtech-light-bg); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .navbar-sibtech { background-color: var(--sibtech-dark); }
-        .btn-sibtech { background-color: var(--sibtech-primary); color: #ffffff; border: none; }
-        .btn-sibtech:hover { background-color: var(--sibtech-primary-hover); color: #ffffff; }
-        .btn-outline-sibtech { color: var(--sibtech-primary); border-color: var(--sibtech-primary); }
-        .btn-outline-sibtech:hover, .btn-check:checked + .btn-outline-sibtech { background-color: var(--sibtech-primary); color: #ffffff; border-color: var(--sibtech-primary); }
-        .item-card { transition: all 0.25s ease; cursor: pointer; border: 1px solid #e2e8f0; }
-        .item-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0, 128, 128, 0.15); border-color: var(--sibtech-primary); }
-        .cart-sticky { position: sticky; top: 80px; }
-        .cart-items-container { max-height: 280px; overflow-y: auto; }
-        .bg-sibtech-gradient { background: linear-gradient(135deg, var(--sibtech-dark) 0%, var(--sibtech-primary) 100%); }
-        .product-img { height: 110px; object-fit: contain; }
-        .badge-sibtech { background-color: rgba(0, 128, 128, 0.1); color: var(--sibtech-primary); border: 1px solid rgba(0, 128, 128, 0.3); }
-    </style>
+    <link rel="stylesheet" href="css/user_dashboard.css">
 </head>
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-dark navbar-sibtech sticky-top shadow-sm">
     <div class="container-fluid px-4">
         <a class="navbar-brand fw-bold text-white d-flex align-items-center" href="user_dashboard.php">
-            <i class="bi bi-cpu-fill text-info fs-3 me-2"></i>
-            <span>SIBTECH <span class="fw-light text-white-50">Portal</span></span>
+            <img src="logo.jpg" alt="SIBTECH Logo" class="navbar-brand-logo rounded-circle border border-white">
+            <span>SIBTECH <span class="fw-light opacity-75">Supply Order Portal</span></span>
         </a>
         <div class="d-flex align-items-center">
             <!-- NOTIFICATION DROPDOWN -->
@@ -179,7 +159,7 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
 
             <a href="request_history.php" class="btn btn-outline-light btn-sm me-3"><i class="bi bi-clock-history me-1"></i>History</a>
             <span class="text-white me-3 d-none d-sm-inline"><i class="bi bi-person-circle me-1"></i><?= htmlspecialchars($default_fullname) ?></span>
-            <a href="logout.php" class="btn btn-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
+            <a href="logout.php" class="btn btn-outline-light btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
         </div>
     </div>
 </nav>
@@ -189,7 +169,7 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
 
     <form id="requestForm">
         <input type="hidden" name="request_supply" value="1">
-        
+
         <div class="row g-4">
             <!-- LEFT: PRODUCT CATALOG -->
             <div class="col-lg-8">
@@ -270,7 +250,7 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
             <!-- RIGHT: BASKET -->
             <div class="col-lg-4">
                 <div class="card border-0 shadow-sm cart-sticky">
-                    <div class="card-header bg-sibtech-gradient text-white d-flex justify-content-between align-items-center py-3">
+                    <div class="card-header bg-sibtech-header text-white d-flex justify-content-between align-items-center py-3">
                         <h5 class="card-title mb-0 fw-bold"><i class="bi bi-basket me-2"></i>Request Basket</h5>
                         <span class="badge bg-white text-dark rounded-pill fw-bold" id="cart-count">0 items</span>
                     </div>
@@ -336,7 +316,7 @@ function loadNotifications() {
         if (data.status === 'success') {
             const badge = document.getElementById('notification-badge');
             const list = document.getElementById('notification-list');
-            
+
             // Unread Count Badge
             if (data.unread_count > 0) {
                 badge.textContent = data.unread_count;
@@ -348,13 +328,13 @@ function loadNotifications() {
             // Mag-check ng BAGO at UNREAD notification para sa APPROVAL Push Notification
             if (data.notifications.length > 0) {
                 const latest = data.notifications[0];
-                
+
                 if (!isInitialized) {
                     lastNotifId = latest.id;
                     isInitialized = true;
                 } else if (latest.id > lastNotifId && latest.is_read == 0) {
                     const msgLower = latest.message.toLowerCase();
-                    
+
                     // Lalabas ang Desktop Push Notification kapag ang message ay patungkol sa APPROVAL
                     if (msgLower.includes('approve') || msgLower.includes('aprubado') || msgLower.includes('na-aprubahan')) {
                         if ("Notification" in window && Notification.permission === "granted") {
@@ -406,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- CART & ITEM MANAGEMENT SCRIPTS ---
 function switchCategory(type) {
-    cart = {}; 
+    cart = {};
     renderCart();
     document.getElementById('searchInput').value = '';
     filterItems();
@@ -447,9 +427,9 @@ function updateQty(id, change) {
     renderCart();
 }
 
-function removeFromCart(id) { 
-    delete cart[id]; 
-    renderCart(); 
+function removeFromCart(id) {
+    delete cart[id];
+    renderCart();
 }
 
 function renderCart() {

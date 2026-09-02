@@ -15,10 +15,10 @@ if (empty($group_id)) {
 
 // Kunin ang mga detalye ng request batay sa request_group_id
 $stmt = $conn->prepare("
-    SELECT r.*, u.fullname AS user_fullname, i.item_name, i.unit 
-    FROM supply_requests r 
-    LEFT JOIN users u ON r.user_id = u.id 
-    LEFT JOIN items i ON r.item_id = i.id 
+    SELECT r.*, u.fullname AS user_fullname, i.item_name, i.unit
+    FROM supply_requests r
+    LEFT JOIN users u ON r.user_id = u.id
+    LEFT JOIN items i ON r.item_id = i.id
     WHERE r.request_group_id = ?
 ");
 $stmt->bind_param("s", $group_id);
@@ -44,125 +44,18 @@ while ($row = $result->fetch_assoc()) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Requisition Form - <?= htmlspecialchars($group_id) ?></title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 9.5pt;
-            margin: 0;
-            padding: 20px;
-            color: #000;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        /* Header Layout kasama ang Logo sa Kaliwa */
-        .header-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            margin-bottom: 8px;
-            min-height: 85px;
-        }
-
-        .header-logo {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 80px;
-            height: auto;
-        }
-
-        .header-text {
-            text-align: center;
-        }
-
-        .header-text h3 {
-            margin: 0;
-            font-size: 11pt;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        .header-text p {
-            margin: 2px 0;
-            font-size: 8pt;
-        }
-
-        .form-title {
-            text-align: center;
-            margin-top: 10px;
-            margin-bottom: 12px;
-            font-size: 10.5pt;
-            font-weight: bold;
-        }
-
-        /* Form Tables Styling */
-        table.form-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: -1px;
-        }
-
-        table.form-table th, 
-        table.form-table td {
-            border: 1px solid #000;
-            padding: 4px 6px;
-            vertical-align: middle;
-        }
-
-        .bg-light-gray {
-            background-color: #f2f2f2;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .fw-bold {
-            font-weight: bold;
-        }
-
-        /* Bottom Section / Signatures */
-        .signature-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: -1px;
-        }
-
-        .signature-table td {
-            border: 1px solid #000;
-            padding: 5px 8px;
-            vertical-align: middle;
-        }
-
-        /* CSS Para alisin ang Date/Time at Page Title mula sa Browser Print */
-        @page {
-            size: portrait;
-            margin: 0; /* Tinatanggal nito ang default browser header at footer */
-        }
-
-        @media print {
-            body {
-                padding: 0.4in; /* Nilalagay natin ang margin sa mismong katawan ng papel */
-            }
-            .no-print {
-                display: none;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/print_request.css">
 </head>
 <body>
 
 <div class="container">
     <!-- Print Button -->
-    <div class="no-print" style="margin-bottom: 15px; text-align: right;">
-        <button onclick="window.print()" style="padding: 6px 14px; font-size: 10pt; cursor: pointer;">Print Form</button>
+    <div class="no-print my-3 text-end">
+        <button onclick="window.print()" class="btn btn-primary px-4"><i class="bi bi-printer me-1"></i> Print Form</button>
+        <a href="user_dashboard.php" class="btn btn-outline-secondary px-3 ms-2">Bumalik sa Dashboard</a>
     </div>
 
     <!-- HEADER SECTION WITH LOGO -->
@@ -196,7 +89,7 @@ while ($row = $result->fetch_assoc()) {
             <td><?= $first_row['date_needed'] ? date('Y-m-d', strtotime($first_row['date_needed'])) : '-' ?></td>
         </tr>
         <tr>
-            <td colspan="4" class="text-center fw-bold">Purpose</td>
+            <td colspan="4" class="text-center fw-bold bg-light-gray">Purpose</td>
         </tr>
         <tr>
             <td colspan="4" style="height: 25px;"><?= htmlspecialchars($first_row['purpose']) ?></td>
@@ -206,18 +99,18 @@ while ($row = $result->fetch_assoc()) {
     <!-- ITEMS TABLE -->
     <table class="form-table">
         <thead>
-            <tr class="text-center fw-bold">
+            <tr class="text-center fw-bold bg-light-gray">
                 <th style="width: 12%;">Quantity</th>
                 <th style="width: 15%;">Unit</th>
                 <th>Description</th>
             </tr>
         </thead>
         <tbody>
-            <?php 
-            $max_rows = 18; 
+            <?php
+            $max_rows = 18;
             $item_count = count($items);
-            
-            foreach ($items as $item): 
+
+            foreach ($items as $item):
             ?>
                 <tr>
                     <td class="text-center"><?= htmlspecialchars($item['quantity']) ?></td>
@@ -263,5 +156,6 @@ while ($row = $result->fetch_assoc()) {
     </table>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

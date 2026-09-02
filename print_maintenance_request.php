@@ -12,11 +12,11 @@ if (empty($group_id)) {
     die("Walang tinukoy na Request Group ID.");
 }
 
-// Fetch Maintenance Request Info (Kinuha na rin ang requisitioner_name at date_needed)
+// Fetch Maintenance Request Info
 $stmt_info = $conn->prepare("
-    SELECT r.request_group_id, r.requisitioner_name, u.fullname, r.department, r.purpose, r.date_needed, r.status, r.request_date, r.approved_at 
-    FROM maintenance_requests r 
-    JOIN users u ON r.user_id = u.id 
+    SELECT r.request_group_id, r.requisitioner_name, u.fullname, r.department, r.purpose, r.date_needed, r.status, r.request_date, r.approved_at
+    FROM maintenance_requests r
+    JOIN users u ON r.user_id = u.id
     WHERE r.request_group_id = ?
     LIMIT 1
 ");
@@ -43,9 +43,9 @@ $display_requisitioner = !empty($data['requisitioner_name']) ? $data['requisitio
 
 // Fetch Items
 $stmt_items = $conn->prepare("
-    SELECT r.quantity, m.unit, m.item_name 
-    FROM maintenance_requests r 
-    JOIN maintenance_items m ON r.item_id = m.id 
+    SELECT r.quantity, m.unit, m.item_name
+    FROM maintenance_requests r
+    JOIN maintenance_items m ON r.item_id = m.id
     WHERE r.request_group_id = ?
 ");
 $stmt_items->bind_param("s", $group_id);
@@ -65,48 +65,27 @@ if ($blank_rows < 0) $blank_rows = 0;
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Central Supply Room (CSR) Requisition Form - <?= htmlspecialchars($group_id) ?></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f8f9fa; color: #000; }
-        .form-container { width: 210mm; min-height: 297mm; padding: 20mm 15mm; margin: 0 auto; background: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .header-text { text-align: center; line-height: 1.2; }
-        .header-text h5 { font-weight: bold; font-size: 14pt; margin-bottom: 2px; }
-        .header-text p { font-size: 8pt; margin: 0; font-style: italic; }
-        .form-title { text-align: center; font-weight: bold; font-size: 11pt; margin-top: 15px; margin-bottom: 2px; }
-        .sub-title { text-align: center; font-size: 9pt; margin-bottom: 15px; }
-        table.form-table, table.items-table { width: 100%; border-collapse: collapse; }
-        table.form-table, table.form-table th, table.form-table td, table.items-table th, table.items-table td { border: 1px solid #000; padding: 5px; font-size: 9pt; }
-        .items-table th, .items-table td { height: 24px; }
-        
-        /* Print Configuration para matanggal ang browser headers at footers */
-        @media print {
-            @page { 
-                margin: 0;
-            }
-            body { 
-                background: none; 
-                margin: 0;
-                padding: 15mm;
-            }
-            .no-print { display: none !important; }
-            .form-container { box-shadow: none; padding: 0; width: 100%; min-height: auto; }
-        }
-    </style>
+    <link rel="stylesheet" href="css/print_maintenance_request.css">
 </head>
 <body>
 
 <div class="text-center my-3 no-print">
-    <button onclick="window.print()" class="btn btn-primary px-4">Print Form</button>
-    <a href="user_dashboard.php" class="btn btn-secondary px-4">Bumalik sa Dashboard</a>
+    <button onclick="window.print()" class="btn btn-primary px-4"><i class="bi bi-printer me-1"></i> Print Form</button>
+    <a href="user_dashboard.php" class="btn btn-outline-secondary px-4 ms-2">Bumalik sa Dashboard</a>
 </div>
 
 <div class="form-container">
-    <div class="header-text">
-        <h5>SOUTHWESTERN INSTITUTE OF BUSINESS AND TECHNOLOGY, INC.</h5>
-        <p>Discipline... Accountability... Professionalism... Humility</p>
-        <p>NAUTICAL HIGHWAY, PANGGULAYAN, PINAMALAYAN, ORIENTAL MINDORO</p>
-        <p>Contact Nos.: +63917-189-7428</p>
+    <div class="header-container">
+        <img src="logo.jpg" alt="SIBTECH Logo" class="header-logo">
+        <div class="header-text">
+            <h5>SOUTHWESTERN INSTITUTE OF BUSINESS AND TECHNOLOGY, INC.</h5>
+            <p>Discipline... Accountability... Professionalism... Humility</p>
+            <p>NAUTICAL HIGHWAY, PANGGULAYAN, PINAMALAYAN, ORIENTAL MINDORO</p>
+            <p>Contact Nos.: +63917-189-7428</p>
+        </div>
     </div>
 
     <div class="form-title">CENTRAL SUPPLY ROOM (CSR) REQUISITION FORM</div>
@@ -187,5 +166,6 @@ if ($blank_rows < 0) $blank_rows = 0;
     </table>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

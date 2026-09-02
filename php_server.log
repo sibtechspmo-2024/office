@@ -1,0 +1,39 @@
+[Wed Sep  2 06:03:33 2026] PHP 8.3.6 Development Server (http://127.0.0.1:8000) started
+[Wed Sep  2 06:03:55 2026] 127.0.0.1:49728 Accepted
+[Wed Sep  2 06:03:55 2026] PHP Fatal error:  Uncaught mysqli_sql_exception: No such file or directory in /app/db.php:13
+Stack trace:
+#0 /app/db.php(13): mysqli->__construct()
+#1 /app/index.php(2): require_once('...')
+#2 {main}
+  thrown in /app/db.php on line 13
+[Wed Sep  2 06:03:55 2026] 127.0.0.1:49728 [500]: HEAD /index.php - Uncaught mysqli_sql_exception: No such file or directory in /app/db.php:13
+Stack trace:
+#0 /app/db.php(13): mysqli->__construct()
+#1 /app/index.php(2): require_once('...')
+#2 {main}
+  thrown in /app/db.php on line 13
+[Wed Sep  2 06:03:55 2026] 127.0.0.1:49728 Closing
+[Wed Sep  2 06:05:10 2026] 127.0.0.1:58784 Accepted
+[Wed Sep  2 06:05:10 2026] 127.0.0.1:58784 [200]: GET /index.php
+[Wed Sep  2 06:05:10 2026] 127.0.0.1:58784 Closing
+[Wed Sep  2 06:06:19 2026] 127.0.0.1:46968 Accepted
+[Wed Sep  2 06:06:19 2026] 127.0.0.1:46968 [200]: GET /index.php
+[Wed Sep  2 06:06:19 2026] 127.0.0.1:46968 Closing
+[Wed Sep  2 06:06:19 2026] 127.0.0.1:46982 Accepted
+[Wed Sep  2 06:06:19 2026] 127.0.0.1:46996 Accepted
+[Wed Sep  2 06:06:19 2026] 127.0.0.1:46982 [200]: GET /css/index.css
+[Wed Sep  2 06:06:19 2026] 127.0.0.1:46982 Closing
+[Wed Sep  2 06:06:19 2026] 127.0.0.1:46996 [200]: GET /logo.jpg
+[Wed Sep  2 06:06:19 2026] 127.0.0.1:46996 Closing
+[Wed Sep  2 06:06:23 2026] 127.0.0.1:39140 Accepted
+[Wed Sep  2 06:06:23 2026] 127.0.0.1:39140 [302]: GET /print_request.php?group_id=REQ-TEST-123
+[Wed Sep  2 06:06:23 2026] 127.0.0.1:39140 Closing
+[Wed Sep  2 06:06:23 2026] 127.0.0.1:39150 Accepted
+[Wed Sep  2 06:06:23 2026] 127.0.0.1:39150 [200]: GET /index.php
+[Wed Sep  2 06:06:23 2026] 127.0.0.1:39150 Closing
+[Wed Sep  2 06:06:23 2026] 127.0.0.1:39152 Accepted
+[Wed Sep  2 06:06:23 2026] 127.0.0.1:39164 Accepted
+[Wed Sep  2 06:06:23 2026] 127.0.0.1:39152 [200]: GET /css/index.css
+[Wed Sep  2 06:06:23 2026] 127.0.0.1:39164 [200]: GET /logo.jpg
+[Wed Sep  2 06:06:23 2026] 127.0.0.1:39152 Closing
+[Wed Sep  2 06:06:23 2026] 127.0.0.1:39164 Closing

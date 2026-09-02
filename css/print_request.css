@@ -1,0 +1,109 @@
+body {
+    font-family: Arial, sans-serif;
+    font-size: 9.5pt;
+    margin: 0;
+    padding: 20px;
+    color: #000;
+}
+
+.container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Header Layout kasama ang Logo sa Kaliwa */
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 8px;
+    min-height: 85px;
+}
+
+.header-logo {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80px;
+    height: auto;
+}
+
+.header-text {
+    text-align: center;
+}
+
+.header-text h3 {
+    margin: 0;
+    font-size: 11pt;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.header-text p {
+    margin: 2px 0;
+    font-size: 8pt;
+}
+
+.form-title {
+    text-align: center;
+    margin-top: 10px;
+    margin-bottom: 12px;
+    font-size: 10.5pt;
+    font-weight: bold;
+}
+
+/* Form Tables Styling */
+table.form-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: -1px;
+}
+
+table.form-table th,
+table.form-table td {
+    border: 1px solid #000;
+    padding: 4px 6px;
+    vertical-align: middle;
+}
+
+.bg-light-gray {
+    background-color: #f2f2f2;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.fw-bold {
+    font-weight: bold;
+}
+
+/* Bottom Section / Signatures */
+.signature-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: -1px;
+}
+
+.signature-table td {
+    border: 1px solid #000;
+    padding: 5px 8px;
+    vertical-align: middle;
+}
+
+/* CSS Para alisin ang Date/Time at Page Title mula sa Browser Print */
+@page {
+    size: portrait;
+    margin: 0;
+}
+
+@media print {
+    body {
+        padding: 0.4in;
+    }
+    .no-print {
+        display: none !important;
+    }
+}

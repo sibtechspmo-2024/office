@@ -34,14 +34,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete') {
 // --- AJAX HANDLER FOR REAL-TIME POLLING ---
 if (isset($_GET['action']) && $_GET['action'] === 'fetch_updates') {
     header('Content-Type: application/json');
-    
+
     $office_requests_res = $conn->query("
         SELECT r.request_group_id, u.fullname AS requisitioner_name, r.department, r.purpose, r.date_needed, r.status, r.request_date,
                GROUP_CONCAT(CONCAT(IFNULL(i.item_name, 'Unknown Item'), ' (x', r.quantity, ')') SEPARATOR '<br>') AS items_summary
-        FROM supply_requests r 
+        FROM supply_requests r
         JOIN users u ON r.user_id = u.id
-        LEFT JOIN items i ON r.item_id = i.id 
-        WHERE r.user_id = {$user_id} 
+        LEFT JOIN items i ON r.item_id = i.id
+        WHERE r.user_id = {$user_id}
         GROUP BY r.request_group_id, u.fullname, r.department, r.purpose, r.date_needed, r.status, r.request_date
         ORDER BY r.request_date DESC
     ")->fetch_all(MYSQLI_ASSOC);
@@ -49,10 +49,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'fetch_updates') {
     $maint_requests_res = $conn->query("
         SELECT r.request_group_id, u.fullname AS requisitioner_name, r.department, r.purpose, r.date_needed, r.status, r.request_date,
                GROUP_CONCAT(CONCAT(IFNULL(m.item_name, 'Unknown Item'), ' (x', r.quantity, ')') SEPARATOR '<br>') AS items_summary
-        FROM maintenance_requests r 
+        FROM maintenance_requests r
         JOIN users u ON r.user_id = u.id
-        LEFT JOIN maintenance_items m ON r.item_id = m.id 
-        WHERE r.user_id = {$user_id} 
+        LEFT JOIN maintenance_items m ON r.item_id = m.id
+        WHERE r.user_id = {$user_id}
         GROUP BY r.request_group_id, u.fullname, r.department, r.purpose, r.date_needed, r.status, r.request_date
         ORDER BY r.request_date DESC
     ")->fetch_all(MYSQLI_ASSOC);
@@ -69,10 +69,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'fetch_updates') {
 $office_requests = $conn->query("
     SELECT r.request_group_id, u.fullname AS requisitioner_name, r.department, r.purpose, r.date_needed, r.status, r.request_date,
            GROUP_CONCAT(CONCAT(IFNULL(i.item_name, 'Unknown Item'), ' (x', r.quantity, ')') SEPARATOR '<br>') AS items_summary
-    FROM supply_requests r 
+    FROM supply_requests r
     JOIN users u ON r.user_id = u.id
-    LEFT JOIN items i ON r.item_id = i.id 
-    WHERE r.user_id = {$user_id} 
+    LEFT JOIN items i ON r.item_id = i.id
+    WHERE r.user_id = {$user_id}
     GROUP BY r.request_group_id, u.fullname, r.department, r.purpose, r.date_needed, r.status, r.request_date
     ORDER BY r.request_date DESC
 ");
@@ -80,10 +80,10 @@ $office_requests = $conn->query("
 $maint_requests = $conn->query("
     SELECT r.request_group_id, u.fullname AS requisitioner_name, r.department, r.purpose, r.date_needed, r.status, r.request_date,
            GROUP_CONCAT(CONCAT(IFNULL(m.item_name, 'Unknown Item'), ' (x', r.quantity, ')') SEPARATOR '<br>') AS items_summary
-    FROM maintenance_requests r 
+    FROM maintenance_requests r
     JOIN users u ON r.user_id = u.id
-    LEFT JOIN maintenance_items m ON r.item_id = m.id 
-    WHERE r.user_id = {$user_id} 
+    LEFT JOIN maintenance_items m ON r.item_id = m.id
+    WHERE r.user_id = {$user_id}
     GROUP BY r.request_group_id, u.fullname, r.department, r.purpose, r.date_needed, r.status, r.request_date
     ORDER BY r.request_date DESC
 ");
@@ -93,17 +93,22 @@ $maint_requests = $conn->query("
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Request History</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request History - SIBTECH Portal</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/request_history.css">
 </head>
-<body class="bg-light">
+<body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+<nav class="navbar navbar-expand-lg navbar-dark navbar-history sticky-top shadow-sm">
     <div class="container-fluid px-4">
-        <a class="navbar-brand fw-bold" href="user_dashboard.php"><i class="bi bi-cart-check me-2"></i>Supply Order Portal</a>
+        <a class="navbar-brand fw-bold text-white d-flex align-items-center" href="user_dashboard.php">
+            <img src="logo.jpg" alt="SIBTECH Logo" class="me-2 rounded-circle border border-white" style="width: 36px; height: auto;">
+            <span>SIBTECH <span class="fw-light opacity-75">Order History</span></span>
+        </a>
         <div class="d-flex align-items-center">
-            <a href="user_dashboard.php" class="btn btn-outline-primary btn-sm me-3"><i class="bi bi-plus-circle me-1"></i>New Request</a>
+            <a href="user_dashboard.php" class="btn btn-outline-light btn-sm me-3"><i class="bi bi-plus-circle me-1"></i>New Request</a>
             <a href="logout.php" class="btn btn-outline-light btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
         </div>
     </div>
@@ -112,8 +117,8 @@ $maint_requests = $conn->query("
 <div class="container-fluid px-4 py-4">
     <div id="alert-box" class="alert d-none shadow-sm"></div>
 
-    <h4 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Aking Request History</h4>
-    
+    <h4 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-logo-blue"></i>Aking Request History</h4>
+
     <ul class="nav nav-pills mb-3" id="requestTabs" role="tablist">
         <li class="nav-item">
             <button class="nav-link active fw-bold" id="office-tab" data-bs-toggle="tab" data-bs-target="#office-requests" type="button">Office Supply Requests</button>
@@ -126,7 +131,7 @@ $maint_requests = $conn->query("
     <div class="tab-content" id="requestTabsContent">
         <!-- Office Table -->
         <div class="tab-pane fade show active" id="office-requests">
-            <div class="card shadow-sm">
+            <div class="card card-history">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
@@ -141,17 +146,17 @@ $maint_requests = $conn->query("
                             <?php else: ?>
                                 <?php while($req = $office_requests->fetch_assoc()): ?>
                                     <tr id="row-<?= $req['request_group_id'] ?>">
-                                        <td class="fw-bold text-nowrap"><?= htmlspecialchars($req['request_group_id']) ?></td>
+                                        <td class="fw-bold text-nowrap text-logo-blue"><?= htmlspecialchars($req['request_group_id']) ?></td>
                                         <td><?= $req['items_summary'] ?></td>
                                         <td><?= htmlspecialchars($req['requisitioner_name'] ?? '') ?></td>
-                                        <td><?= htmlspecialchars($req['department']) ?></td>
+                                        <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($req['department']) ?></span></td>
                                         <td><?= htmlspecialchars($req['purpose']) ?></td>
                                         <td class="text-nowrap"><?= $req['date_needed'] ? date('Y-m-d', strtotime($req['date_needed'])) : '-' ?></td>
                                         <td><span class="badge bg-<?= $req['status'] == 'Approved' ? 'success' : ($req['status'] == 'Rejected' ? 'danger' : 'warning') ?>"><?= $req['status'] ?></span></td>
-                                        <td class="text-nowrap"><?= date('Y-m-d H:i', strtotime($req['request_date'])) ?></td>
+                                        <td class="text-nowrap text-muted small"><?= date('Y-m-d H:i', strtotime($req['request_date'])) ?></td>
                                         <td>
                                             <?php if($req['status'] == 'Approved'): ?>
-                                                <a href="print_request.php?group_id=<?= $req['request_group_id'] ?>" class="btn btn-sm btn-secondary"><i class="bi bi-printer me-1"></i>Print Form</a>
+                                                <a href="print_request.php?group_id=<?= $req['request_group_id'] ?>" class="btn btn-sm btn-logo-primary"><i class="bi bi-printer me-1"></i>Print Form</a>
                                             <?php elseif($req['status'] == 'Rejected'): ?>
                                                 <button class="btn btn-sm btn-danger delete-btn" onclick="deleteRequest('<?= $req['request_group_id'] ?>', 'office')"><i class="bi bi-trash me-1"></i>Delete</button>
                                             <?php else: ?>
@@ -169,7 +174,7 @@ $maint_requests = $conn->query("
 
         <!-- Maintenance Table -->
         <div class="tab-pane fade" id="maint-requests">
-            <div class="card shadow-sm">
+            <div class="card card-history">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
@@ -184,17 +189,17 @@ $maint_requests = $conn->query("
                             <?php else: ?>
                                 <?php while($req = $maint_requests->fetch_assoc()): ?>
                                     <tr id="row-<?= $req['request_group_id'] ?>">
-                                        <td class="fw-bold text-nowrap"><?= htmlspecialchars($req['request_group_id']) ?></td>
+                                        <td class="fw-bold text-nowrap text-logo-blue"><?= htmlspecialchars($req['request_group_id']) ?></td>
                                         <td><?= $req['items_summary'] ?></td>
                                         <td><?= htmlspecialchars($req['requisitioner_name'] ?? '') ?></td>
-                                        <td><?= htmlspecialchars($req['department']) ?></td>
+                                        <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($req['department']) ?></span></td>
                                         <td><?= htmlspecialchars($req['purpose']) ?></td>
                                         <td class="text-nowrap"><?= $req['date_needed'] ? date('Y-m-d', strtotime($req['date_needed'])) : '-' ?></td>
                                         <td><span class="badge bg-<?= $req['status'] == 'Approved' ? 'success' : ($req['status'] == 'Rejected' ? 'danger' : 'warning') ?>"><?= $req['status'] ?></span></td>
-                                        <td class="text-nowrap"><?= date('Y-m-d H:i', strtotime($req['request_date'])) ?></td>
+                                        <td class="text-nowrap text-muted small"><?= date('Y-m-d H:i', strtotime($req['request_date'])) ?></td>
                                         <td>
                                             <?php if($req['status'] == 'Approved'): ?>
-                                                <a href="print_maintenance_request.php?group_id=<?= $req['request_group_id'] ?>" class="btn btn-sm btn-secondary"><i class="bi bi-printer me-1"></i>Print Form</a>
+                                                <a href="print_maintenance_request.php?group_id=<?= $req['request_group_id'] ?>" class="btn btn-sm btn-logo-primary"><i class="bi bi-printer me-1"></i>Print Form</a>
                                             <?php elseif($req['status'] == 'Rejected'): ?>
                                                 <button class="btn btn-sm btn-danger delete-btn" onclick="deleteRequest('<?= $req['request_group_id'] ?>', 'maintenance')"><i class="bi bi-trash me-1"></i>Delete</button>
                                             <?php else: ?>
@@ -216,7 +221,7 @@ $maint_requests = $conn->query("
 <script>
 function deleteRequest(groupId, type) {
     if(!confirm("Sigurado ka bang gusto mong burahin ang request na ito?")) return;
-    
+
     fetch(`request_history.php?action=delete&group_id=${groupId}&type=${type}`)
     .then(res => res.json())
     .then(data => {
@@ -253,7 +258,7 @@ function renderTable(tbodyId, items, type, printPage) {
         let badgeClass = req.status === 'Approved' ? 'success' : (req.status === 'Rejected' ? 'danger' : 'warning');
         let actionBtn = '';
         if (req.status === 'Approved') {
-            actionBtn = `<a href="${printPage}?group_id=${req.request_group_id}" class="btn btn-sm btn-secondary"><i class="bi bi-printer me-1"></i>Print Form</a>`;
+            actionBtn = `<a href="${printPage}?group_id=${req.request_group_id}" class="btn btn-sm btn-logo-primary"><i class="bi bi-printer me-1"></i>Print Form</a>`;
         } else if (req.status === 'Rejected') {
             actionBtn = `<button class="btn btn-sm btn-danger delete-btn" onclick="deleteRequest('${req.request_group_id}', '${type}')"><i class="bi bi-trash me-1"></i>Delete</button>`;
         } else {
@@ -261,14 +266,14 @@ function renderTable(tbodyId, items, type, printPage) {
         }
 
         html += `<tr id="row-${req.request_group_id}">
-            <td class="fw-bold text-nowrap">${req.request_group_id}</td>
+            <td class="fw-bold text-nowrap text-logo-blue">${req.request_group_id}</td>
             <td>${req.items_summary}</td>
             <td>${req.requisitioner_name || ''}</td>
-            <td>${req.department}</td>
+            <td><span class="badge bg-light text-dark border">${req.department}</span></td>
             <td>${req.purpose}</td>
             <td class="text-nowrap">${req.date_needed ? req.date_needed.split(' ')[0] : '-'}</td>
             <td><span class="badge bg-${badgeClass}">${req.status}</span></td>
-            <td class="text-nowrap">${req.request_date}</td>
+            <td class="text-nowrap text-muted small">${req.request_date}</td>
             <td>${actionBtn}</td>
         </tr>`;
     });

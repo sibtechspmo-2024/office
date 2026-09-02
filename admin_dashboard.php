@@ -12,19 +12,19 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role'] ?? '') !== 'adm
 if (isset($_GET['fetch_requests']) && $_GET['fetch_requests'] == '1') {
     $type = $_GET['type'] ?? 'office';
     $req_table = ($type === 'maintenance') ? 'maintenance_requests' : 'supply_requests';
-    
+
     $requests = $conn->query("
-        SELECT request_group_id, requisitioner_name, department, purpose, COUNT(*) as total_items, MAX(id) as max_id 
-        FROM {$req_table} 
-        WHERE status = 'Pending' 
-        GROUP BY request_group_id, requisitioner_name, department, purpose 
+        SELECT request_group_id, requisitioner_name, department, purpose, COUNT(*) as total_items, MAX(id) as max_id
+        FROM {$req_table}
+        WHERE status = 'Pending'
+        GROUP BY request_group_id, requisitioner_name, department, purpose
         ORDER BY max_id DESC
     ");
 
     if ($requests && $requests->num_rows > 0) {
         while($row = $requests->fetch_assoc()) {
             echo '<tr>';
-            echo '<td class="fw-bold text-primary">#' . htmlspecialchars($row['request_group_id']) . '</td>';
+            echo '<td class="fw-bold text-logo-blue">#' . htmlspecialchars($row['request_group_id']) . '</td>';
             echo '<td>' . htmlspecialchars($row['requisitioner_name']) . '</td>';
             echo '<td><span class="badge bg-light text-dark border">' . htmlspecialchars($row['department']) . '</span></td>';
             echo '<td><span class="badge bg-secondary">' . $row['total_items'] . ' item(s)</span></td>';
@@ -46,27 +46,27 @@ if (isset($_GET['fetch_requests']) && $_GET['fetch_requests'] == '1') {
 if (isset($_GET['fetch_request_details']) && $_GET['fetch_request_details'] == '1') {
     $group_id = $_GET['group_id'] ?? '';
     $type = $_GET['type'] ?? 'office';
-    
+
     $req_table = ($type === 'maintenance') ? 'maintenance_requests' : 'supply_requests';
     $item_table = ($type === 'maintenance') ? 'maintenance_items' : 'items';
-    
+
     $stmt = $conn->prepare("
-        SELECT r.id as req_id, r.quantity, r.item_id, i.item_name, i.unit, i.actual_stocks 
-        FROM {$req_table} r 
-        JOIN {$item_table} i ON r.item_id = i.id 
+        SELECT r.id as req_id, r.quantity, r.item_id, i.item_name, i.unit, i.actual_stocks
+        FROM {$req_table} r
+        JOIN {$item_table} i ON r.item_id = i.id
         WHERE r.request_group_id = ? AND r.status = 'Pending'
     ");
     $stmt->bind_param("s", $group_id);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     if ($result && $result->num_rows > 0) {
         echo '<form id="editRequestItemsForm" class="ajax-form">';
         echo '<input type="hidden" name="action_request" value="1">';
         echo '<input type="hidden" name="action" id="modal_action_type" value="Approved">';
         echo '<input type="hidden" name="group_id" value="' . htmlspecialchars($group_id) . '">';
         echo '<input type="hidden" name="type" value="' . htmlspecialchars($type) . '">';
-        
+
         echo '<div class="table-responsive"><table class="table table-bordered align-middle mb-0">';
         echo '<thead class="table-light"><tr><th>Item Name</th><th>Unit</th><th>Requested Qty (Editable)</th><th>Current Stock</th></tr></thead><tbody>';
         while($row = $result->fetch_assoc()) {
@@ -221,7 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_stock'])) {
     $item_id = intval($_POST['item_id'] ?? 0);
     $item_type = $_POST['item_type'] ?? 'office';
     $new_stock = intval($_POST['new_stock'] ?? 0);
-    
+
     $item_table = ($item_type === 'maintenance') ? 'maintenance_items' : 'items';
     $new_image = uploadItemImage($_FILES['item_image']);
 
@@ -240,24 +240,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_stock'])) {
         $stmt_up = $conn->prepare("UPDATE {$item_table} SET actual_stocks = ? WHERE id = ?");
         $stmt_up->bind_param("ii", $new_stock, $item_id);
     }
-    
+
     $stmt_up->execute();
     sendResponse("Matagumpay na na-update ang inventory item!", true);
 }
 
 $office_requests = $conn->query("
-    SELECT request_group_id, requisitioner_name, department, purpose, COUNT(*) as total_items, MAX(id) as max_id 
-    FROM supply_requests 
-    WHERE status = 'Pending' 
-    GROUP BY request_group_id, requisitioner_name, department, purpose 
+    SELECT request_group_id, requisitioner_name, department, purpose, COUNT(*) as total_items, MAX(id) as max_id
+    FROM supply_requests
+    WHERE status = 'Pending'
+    GROUP BY request_group_id, requisitioner_name, department, purpose
     ORDER BY max_id DESC
 ");
 
 $maint_requests = $conn->query("
-    SELECT request_group_id, requisitioner_name, department, purpose, COUNT(*) as total_items, MAX(id) as max_id 
-    FROM maintenance_requests 
-    WHERE status = 'Pending' 
-    GROUP BY request_group_id, requisitioner_name, department, purpose 
+    SELECT request_group_id, requisitioner_name, department, purpose, COUNT(*) as total_items, MAX(id) as max_id
+    FROM maintenance_requests
+    WHERE status = 'Pending'
+    GROUP BY request_group_id, requisitioner_name, department, purpose
     ORDER BY max_id DESC
 ");
 
@@ -270,30 +270,25 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - CSR System</title>
+    <title>Admin Dashboard - SIBTECH Portal</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --primary-color: #0d6efd; }
-        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
-        .nav-pills .nav-link { border-radius: 8px; color: #495057; font-weight: 600; padding: 10px 20px; }
-        .nav-pills .nav-link.active { background-color: var(--primary-color); box-shadow: 0 4px 8px rgba(13, 110, 253, 0.25); }
-        .table-img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; }
-        .table-container { border-radius: 12px; overflow: hidden; }
-        .badge-stock { font-size: 0.85rem; padding: 0.4em 0.8em; border-radius: 6px; }
-    </style>
+    <link rel="stylesheet" href="css/admin_dashboard.css">
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3">
+<nav class="navbar navbar-expand-lg navbar-dark navbar-admin py-3 shadow-sm">
     <div class="container">
-        <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#">
-            <i class="fa-solid fa-user-shield text-primary"></i> CSR Admin Control
+        <a class="navbar-brand fw-bold d-flex align-items-center text-white" href="admin_dashboard.php">
+            <img src="logo.jpg" alt="SIBTECH Logo" class="navbar-brand-logo rounded-circle border border-white">
+            <span>SIBTECH <span class="fw-light opacity-75">Admin Control</span></span>
         </a>
         <div class="d-flex align-items-center gap-3">
+            <a href="in_stock.php" class="btn btn-outline-light btn-sm rounded-pill px-3 me-2">
+                <i class="fa-solid fa-boxes-stacked me-1"></i> In Stock Items
+            </a>
             <span class="text-white-50 small d-none d-md-inline">Logged in as Administrator</span>
-            <a href="logout.php" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+            <a href="logout.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
                 <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
             </a>
         </div>
@@ -356,7 +351,7 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
                             <?php if ($office_requests && $office_requests->num_rows > 0): ?>
                                 <?php while($row = $office_requests->fetch_assoc()): ?>
                                     <tr>
-                                        <td class="fw-bold text-primary">#<?= htmlspecialchars($row['request_group_id']) ?></td>
+                                        <td class="fw-bold text-logo-blue">#<?= htmlspecialchars($row['request_group_id']) ?></td>
                                         <td><?= htmlspecialchars($row['requisitioner_name']) ?></td>
                                         <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($row['department']) ?></span></td>
                                         <td><span class="badge bg-secondary"><?= $row['total_items'] ?> item(s)</span></td>
@@ -384,7 +379,7 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
             <div class="card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold text-dark mb-0">Office Supply Inventory</h5>
-                    <button class="btn btn-primary rounded-pill btn-sm px-3" data-bs-toggle="modal" data-bs-target="#addOfficeItemModal">
+                    <button class="btn btn-logo-primary rounded-pill btn-sm px-3" data-bs-toggle="modal" data-bs-target="#addOfficeItemModal">
                         <i class="fa-solid fa-plus me-1"></i> Dagdag Office Item
                     </button>
                 </div>
@@ -418,15 +413,15 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
                                     <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($item['unit']) ?></span></td>
                                     <td class="fw-bold fs-6"><?= $item['actual_stocks'] ?></td>
                                     <td>
-                                        <?= ($item['actual_stocks'] > 0) 
-                                            ? '<span class="badge bg-success-subtle text-success border border-success-subtle badge-stock">With Stock</span>' 
+                                        <?= ($item['actual_stocks'] > 0)
+                                            ? '<span class="badge bg-success-subtle text-success border border-success-subtle badge-stock">With Stock</span>'
                                             : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle badge-stock">Out of Stock</span>' ?>
                                     </td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3 update-btn" 
-                                                data-id="<?= $item['id'] ?>" 
-                                                data-name="<?= htmlspecialchars($item['item_name'], ENT_QUOTES) ?>" 
-                                                data-stocks="<?= $item['actual_stocks'] ?>" 
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3 update-btn"
+                                                data-id="<?= $item['id'] ?>"
+                                                data-name="<?= htmlspecialchars($item['item_name'], ENT_QUOTES) ?>"
+                                                data-stocks="<?= $item['actual_stocks'] ?>"
                                                 data-type="office">
                                             <i class="fa-solid fa-pen-to-square me-1"></i> Update
                                         </button>
@@ -459,7 +454,7 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
                             <?php if ($maint_requests && $maint_requests->num_rows > 0): ?>
                                 <?php while($row = $maint_requests->fetch_assoc()): ?>
                                     <tr>
-                                        <td class="fw-bold text-primary">#<?= htmlspecialchars($row['request_group_id']) ?></td>
+                                        <td class="fw-bold text-logo-blue">#<?= htmlspecialchars($row['request_group_id']) ?></td>
                                         <td><?= htmlspecialchars($row['requisitioner_name']) ?></td>
                                         <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($row['department']) ?></span></td>
                                         <td><span class="badge bg-secondary"><?= $row['total_items'] ?> item(s)</span></td>
@@ -487,7 +482,7 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
             <div class="card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold text-dark mb-0">Maintenance Inventory</h5>
-                    <button class="btn btn-warning rounded-pill btn-sm px-3 fw-bold text-dark" data-bs-toggle="modal" data-bs-target="#addMaintItemModal">
+                    <button class="btn btn-logo-accent rounded-pill btn-sm px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#addMaintItemModal">
                         <i class="fa-solid fa-plus me-1"></i> Dagdag Maintenance Item
                     </button>
                 </div>
@@ -521,15 +516,15 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
                                     <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($item['unit']) ?></span></td>
                                     <td class="fw-bold fs-6"><?= $item['actual_stocks'] ?></td>
                                     <td>
-                                        <?= ($item['actual_stocks'] > 0) 
-                                            ? '<span class="badge bg-success-subtle text-success border border-success-subtle badge-stock">With Stock</span>' 
+                                        <?= ($item['actual_stocks'] > 0)
+                                            ? '<span class="badge bg-success-subtle text-success border border-success-subtle badge-stock">With Stock</span>'
                                             : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle badge-stock">Out of Stock</span>' ?>
                                     </td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-warning text-dark rounded-pill px-3 fw-bold update-btn" 
-                                                data-id="<?= $item['id'] ?>" 
-                                                data-name="<?= htmlspecialchars($item['item_name'], ENT_QUOTES) ?>" 
-                                                data-stocks="<?= $item['actual_stocks'] ?>" 
+                                        <button class="btn btn-sm btn-outline-warning text-dark rounded-pill px-3 fw-bold update-btn"
+                                                data-id="<?= $item['id'] ?>"
+                                                data-name="<?= htmlspecialchars($item['item_name'], ENT_QUOTES) ?>"
+                                                data-stocks="<?= $item['actual_stocks'] ?>"
                                                 data-type="maintenance">
                                             <i class="fa-solid fa-pen-to-square me-1"></i> Update
                                         </button>
@@ -548,7 +543,7 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
 <div class="modal fade" id="viewRequestModal" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 shadow">
-      <div class="modal-header bg-dark text-white">
+      <div class="modal-header text-white" style="background-color: var(--logo-blue);">
         <h5 class="modal-title fs-6 fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Edit & Review Request Items</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
@@ -574,14 +569,14 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
 <div class="modal fade" id="updateStockModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <form method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow ajax-form">
-      <div class="modal-header bg-dark text-white">
+      <div class="modal-header text-white" style="background-color: var(--logo-blue);">
         <h5 class="modal-title fs-6 fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Update Stock & Image</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4">
         <input type="hidden" name="item_id" id="update_item_id">
         <input type="hidden" name="item_type" id="update_item_type">
-        
+
         <div class="mb-3">
             <label class="form-label fw-semibold">Item Name</label>
             <input type="text" id="update_item_name" class="form-control bg-light" readonly>
@@ -597,7 +592,7 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
       </div>
       <div class="modal-footer border-0 bg-light">
         <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" name="update_stock" class="btn btn-primary rounded-pill px-4">I-save ang Pagbabago</button>
+        <button type="submit" name="update_stock" class="btn btn-logo-primary rounded-pill px-4">I-save ang Pagbabago</button>
       </div>
     </form>
   </div>
@@ -607,7 +602,7 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
 <div class="modal fade" id="addOfficeItemModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <form method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow ajax-form">
-      <div class="modal-header bg-primary text-white">
+      <div class="modal-header text-white" style="background-color: var(--logo-blue);">
         <h5 class="modal-title fs-6 fw-bold"><i class="fa-solid fa-plus me-2"></i>Dagdag Office Supply Item</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
@@ -632,7 +627,7 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
       </div>
       <div class="modal-footer border-0 bg-light">
         <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-primary rounded-pill px-4">I-save ang Item</button>
+        <button type="submit" class="btn btn-logo-primary rounded-pill px-4">I-save ang Item</button>
       </div>
     </form>
   </div>
@@ -642,7 +637,7 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
 <div class="modal fade" id="addMaintItemModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <form method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow ajax-form">
-      <div class="modal-header bg-warning text-dark">
+      <div class="modal-header bg-logo-accent text-dark" style="background-color: var(--logo-yellow);">
         <h5 class="modal-title fs-6 fw-bold"><i class="fa-solid fa-plus me-2"></i>Dagdag Maintenance Item</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
@@ -667,7 +662,7 @@ $maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_n
       </div>
       <div class="modal-footer border-0 bg-light">
         <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-warning rounded-pill px-4 fw-bold">I-save ang Item</button>
+        <button type="submit" class="btn btn-logo-accent rounded-pill px-4 fw-bold">I-save ang Item</button>
       </div>
     </form>
   </div>
@@ -773,7 +768,7 @@ function pollRequests() {
         type: 'GET',
         success: function(data) {
             $('#office-requests-tbody').html(data);
-            
+
             let tempDiv = $('<div>').html(data);
             let currentCount = tempDiv.find('tr').length;
             if (tempDiv.find('td[colspan]').length > 0) currentCount = 0;
@@ -790,7 +785,7 @@ function pollRequests() {
         type: 'GET',
         success: function(data) {
             $('#maint-requests-tbody').html(data);
-            
+
             let tempDiv = $('<div>').html(data);
             let currentCount = tempDiv.find('tr').length;
             if (tempDiv.find('td[colspan]').length > 0) currentCount = 0;
