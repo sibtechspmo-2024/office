@@ -8,6 +8,36 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role'] ?? '') !== 'adm
     exit;
 }
 
+// 0. AJAX Endpoint para sa Live KPI Numbers Auto Update
+if (isset($_GET['fetch_kpis']) && $_GET['fetch_kpis'] == '1') {
+    header('Content-Type: application/json');
+
+    $off_res = $conn->query("SELECT COUNT(DISTINCT request_group_id) as cnt FROM supply_requests WHERE status = 'Pending'");
+    $pending_office_count = $off_res ? intval($off_res->fetch_assoc()['cnt']) : 0;
+
+    $mnt_res = $conn->query("SELECT COUNT(DISTINCT request_group_id) as cnt FROM maintenance_requests WHERE status = 'Pending'");
+    $pending_maint_count = $mnt_res ? intval($mnt_res->fetch_assoc()['cnt']) : 0;
+
+    $total_office_items = $conn->query("SELECT COUNT(*) as cnt FROM items")->fetch_assoc()['cnt'] ?? 0;
+    $total_maint_items = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_items")->fetch_assoc()['cnt'] ?? 0;
+    $total_inventory_items = intval($total_office_items) + intval($total_maint_items);
+
+    $low_office_stock = $conn->query("SELECT COUNT(*) as cnt FROM items WHERE actual_stocks <= 5")->fetch_assoc()['cnt'] ?? 0;
+    $low_maint_stock = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_items WHERE actual_stocks <= 5")->fetch_assoc()['cnt'] ?? 0;
+    $low_stock_count = intval($low_office_stock) + intval($low_maint_stock);
+
+    echo json_encode([
+        'success' => true,
+        'pending_office' => $pending_office_count,
+        'pending_maint' => $pending_maint_count,
+        'total_inventory' => $total_inventory_items,
+        'total_office_items' => intval($total_office_items),
+        'total_maint_items' => intval($total_maint_items),
+        'low_stock' => $low_stock_count
+    ]);
+    exit;
+}
+
 // 1. AJAX Endpoint para sa Live Table Refresh
 if (isset($_GET['fetch_requests']) && $_GET['fetch_requests'] == '1') {
     $type = $_GET['type'] ?? 'office';
@@ -617,7 +647,7 @@ $low_stock_count = $low_office_stock + $low_maint_stock;
                 <div class="kpi-card d-flex align-items-center justify-content-between">
                     <div>
                         <small class="text-muted fw-bold uppercase">Pending Office Requests</small>
-                        <h3 class="fw-bold mb-0 mt-1 text-dark"><?= $pending_office_count ?></h3>
+                        <h3 class="fw-bold mb-0 mt-1 text-dark" id="kpi-pending-office"><?= $pending_office_count ?></h3>
                     </div>
                     <div class="kpi-icon kpi-icon-teal">
                         <i class="fa-solid fa-clipboard-list"></i>
@@ -628,7 +658,7 @@ $low_stock_count = $low_office_stock + $low_maint_stock;
                 <div class="kpi-card d-flex align-items-center justify-content-between">
                     <div>
                         <small class="text-muted fw-bold">Pending Maint. Requests</small>
-                        <h3 class="fw-bold mb-0 mt-1 text-dark"><?= $pending_maint_count ?></h3>
+                        <h3 class="fw-bold mb-0 mt-1 text-dark" id="kpi-pending-maint"><?= $pending_maint_count ?></h3>
                     </div>
                     <div class="kpi-icon kpi-icon-navy">
                         <i class="fa-solid fa-screwdriver-wrench"></i>
@@ -639,7 +669,7 @@ $low_stock_count = $low_office_stock + $low_maint_stock;
                 <div class="kpi-card d-flex align-items-center justify-content-between">
                     <div>
                         <small class="text-muted fw-bold">Total Inventory Items</small>
-                        <h3 class="fw-bold mb-0 mt-1 text-dark"><?= $total_inventory_items ?></h3>
+                        <h3 class="fw-bold mb-0 mt-1 text-dark" id="kpi-total-inventory"><?= $total_inventory_items ?></h3>
                     </div>
                     <div class="kpi-icon kpi-icon-amber">
                         <i class="fa-solid fa-boxes-stacked"></i>
@@ -650,7 +680,7 @@ $low_stock_count = $low_office_stock + $low_maint_stock;
                 <div class="kpi-card d-flex align-items-center justify-content-between">
                     <div>
                         <small class="text-muted fw-bold">Low / Out of Stock</small>
-                        <h3 class="fw-bold mb-0 mt-1 text-danger"><?= $low_stock_count ?></h3>
+                        <h3 class="fw-bold mb-0 mt-1 text-danger" id="kpi-low-stock"><?= $low_stock_count ?></h3>
                     </div>
                     <div class="kpi-icon kpi-icon-red">
                         <i class="fa-solid fa-triangle-exclamation"></i>
@@ -663,22 +693,22 @@ $low_stock_count = $low_office_stock + $low_maint_stock;
         <ul class="nav shopee-tabs" id="adminTabs" role="tablist">
             <li class="nav-item">
                 <button class="nav-link active" id="office-req-tab" data-bs-toggle="tab" data-bs-target="#office-req" type="button">
-                    <i class="fa-solid fa-file-invoice me-2"></i>Office Requests (<?= $pending_office_count ?>)
+                    <i class="fa-solid fa-file-invoice me-2"></i>Office Requests (<span id="tab-cnt-office-req"><?= $pending_office_count ?></span>)
                 </button>
             </li>
             <li class="nav-item">
                 <button class="nav-link" id="office-inv-tab" data-bs-toggle="tab" data-bs-target="#office-inv" type="button">
-                    <i class="fa-solid fa-box me-2"></i>Office Inventory (<?= $total_office_items ?>)
+                    <i class="fa-solid fa-box me-2"></i>Office Inventory (<span id="tab-cnt-office-inv"><?= $total_office_items ?></span>)
                 </button>
             </li>
             <li class="nav-item">
                 <button class="nav-link" id="maint-req-tab" data-bs-toggle="tab" data-bs-target="#maint-req" type="button">
-                    <i class="fa-solid fa-wrench me-2"></i>Maintenance Requests (<?= $pending_maint_count ?>)
+                    <i class="fa-solid fa-wrench me-2"></i>Maintenance Requests (<span id="tab-cnt-maint-req"><?= $pending_maint_count ?></span>)
                 </button>
             </li>
             <li class="nav-item">
                 <button class="nav-link" id="maint-inv-tab" data-bs-toggle="tab" data-bs-target="#maint-inv" type="button">
-                    <i class="fa-solid fa-layer-group me-2"></i>Maintenance Inventory (<?= $total_maint_items ?>)
+                    <i class="fa-solid fa-layer-group me-2"></i>Maintenance Inventory (<span id="tab-cnt-maint-inv"><?= $total_maint_items ?></span>)
                 </button>
             </li>
         </ul>
@@ -689,7 +719,7 @@ $low_stock_count = $low_office_stock + $low_maint_stock;
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold text-dark mb-0">Pending Office Supply Requests</h5>
                     <span class="badge bg-sibtech-subtle text-sibtech fw-bold px-3 py-2 border border-sibtech-subtle">
-                        <?= $pending_office_count ?> Pending Approval
+                        <span id="badge-pending-office"><?= $pending_office_count ?></span> Pending Approval
                     </span>
                 </div>
                 <div class="table-responsive rounded-3 border">
@@ -793,7 +823,7 @@ $low_stock_count = $low_office_stock + $low_maint_stock;
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold text-dark mb-0">Pending Maintenance Requests</h5>
                     <span class="badge bg-sibtech-subtle text-sibtech fw-bold px-3 py-2 border border-sibtech-subtle">
-                        <?= $pending_maint_count ?> Pending Approval
+                        <span id="badge-pending-maint"><?= $pending_maint_count ?></span> Pending Approval
                     </span>
                 </div>
                 <div class="table-responsive rounded-3 border">
@@ -1122,6 +1152,29 @@ function triggerDesktopNotification(title, message) {
 }
 
 function pollRequests() {
+    // Poll Live KPIs
+    $.ajax({
+        url: window.location.pathname + '?fetch_kpis=1',
+        type: 'GET',
+        dataType: 'json',
+        success: function(data) {
+            if (data.success) {
+                $('#kpi-pending-office').text(data.pending_office);
+                $('#kpi-pending-maint').text(data.pending_maint);
+                $('#kpi-total-inventory').text(data.total_inventory);
+                $('#kpi-low-stock').text(data.low_stock);
+
+                $('#badge-pending-office').text(data.pending_office);
+                $('#badge-pending-maint').text(data.pending_maint);
+
+                $('#tab-cnt-office-req').text(data.pending_office);
+                $('#tab-cnt-office-inv').text(data.total_office_items);
+                $('#tab-cnt-maint-req').text(data.pending_maint);
+                $('#tab-cnt-maint-inv').text(data.total_maint_items);
+            }
+        }
+    });
+
     $.ajax({
         url: window.location.pathname + '?fetch_requests=1&type=office',
         type: 'GET',
