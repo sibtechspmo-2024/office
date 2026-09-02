@@ -104,7 +104,7 @@ if (isset($_GET['fetch_request_details']) && $_GET['fetch_request_details'] == '
             echo '<tr>';
             echo '<td class="fw-semibold">' . htmlspecialchars($row['item_name']) . '</td>';
             echo '<td><span class="badge bg-light text-dark border">' . htmlspecialchars($row['unit']) . '</span></td>';
-            echo '<td><input type="number" name="quantities[' . $row['req_id'] . ']" value="' . intval($row['quantity']) . '" class="form-control form-control-sm" min="1" required></td>';
+            echo '<td><input type="number" name="quantities[' . $row['req_id'] . ']" value="' . intval($row['quantity']) . '" class="form-control form-control-sm" min="0" required></td>';
             echo '<td class="' . $stock_class . '">' . $row['actual_stocks'] . '</td>';
             echo '</tr>';
         }
@@ -166,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_request'])) {
 
         foreach ($quantities as $req_id => $new_qty) {
             $new_qty = intval($new_qty);
-            if ($new_qty <= 0) continue;
+            if ($new_qty < 0) continue;
 
             $stmt_r = $conn->prepare("SELECT item_id FROM {$req_table} WHERE id = ? AND request_group_id = ?");
             $stmt_r->bind_param("is", $req_id, $group_id);
@@ -197,9 +197,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_request'])) {
                 $stmt_up_req->bind_param("ii", $item['qty'], $item['req_id']);
                 $stmt_up_req->execute();
 
-                $stmt_deduct = $conn->prepare("UPDATE {$item_table} SET actual_stocks = actual_stocks - ? WHERE id = ?");
-                $stmt_deduct->bind_param("ii", $item['qty'], $item['item_id']);
-                $stmt_deduct->execute();
+                if ($item['qty'] > 0) {
+                    $stmt_deduct = $conn->prepare("UPDATE {$item_table} SET actual_stocks = actual_stocks - ? WHERE id = ?");
+                    $stmt_deduct->bind_param("ii", $item['qty'], $item['item_id']);
+                    $stmt_deduct->execute();
+                }
             }
 
             // I-reject o linisin ang iba pang natira kung sakali
