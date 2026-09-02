@@ -1,34 +1,13 @@
-[Wed Sep  2 06:55:27 2026] PHP 8.3.6 Development Server (http://127.0.0.1:8000) started
-[Wed Sep  2 06:56:04 2026] 127.0.0.1:60002 Accepted
-[Wed Sep  2 06:56:04 2026] 127.0.0.1:60002 [200]: GET /index.php
-[Wed Sep  2 06:56:04 2026] 127.0.0.1:60002 Closing
-[Wed Sep  2 06:56:04 2026] 127.0.0.1:60006 Accepted
-[Wed Sep  2 06:56:04 2026] 127.0.0.1:60018 Accepted
-[Wed Sep  2 06:56:04 2026] 127.0.0.1:60006 [200]: GET /css/index.css
-[Wed Sep  2 06:56:04 2026] 127.0.0.1:60006 Closing
-[Wed Sep  2 06:56:04 2026] 127.0.0.1:60018 [200]: GET /logo.jpg
-[Wed Sep  2 06:56:04 2026] 127.0.0.1:60018 Closing
-[Wed Sep  2 06:56:05 2026] 127.0.0.1:60032 Accepted
-[Wed Sep  2 06:56:05 2026] 127.0.0.1:60032 [302]: GET /admin_office.php
-[Wed Sep  2 06:56:05 2026] 127.0.0.1:60032 Closing
-[Wed Sep  2 06:56:05 2026] 127.0.0.1:60048 Accepted
-[Wed Sep  2 06:56:05 2026] 127.0.0.1:60048 [200]: GET /index.php
-[Wed Sep  2 06:56:05 2026] 127.0.0.1:60048 Closing
-[Wed Sep  2 06:56:05 2026] 127.0.0.1:60056 Accepted
-[Wed Sep  2 06:56:05 2026] 127.0.0.1:60066 Accepted
-[Wed Sep  2 06:56:05 2026] 127.0.0.1:60056 [200]: GET /css/index.css
-[Wed Sep  2 06:56:05 2026] 127.0.0.1:60056 Closing
-[Wed Sep  2 06:56:05 2026] 127.0.0.1:60066 [200]: GET /logo.jpg
-[Wed Sep  2 06:56:05 2026] 127.0.0.1:60066 Closing
-[Wed Sep  2 06:56:06 2026] 127.0.0.1:60072 Accepted
-[Wed Sep  2 06:56:06 2026] 127.0.0.1:60072 [302]: GET /admin_maintenance.php
-[Wed Sep  2 06:56:06 2026] 127.0.0.1:60072 Closing
-[Wed Sep  2 06:56:06 2026] 127.0.0.1:60084 Accepted
-[Wed Sep  2 06:56:06 2026] 127.0.0.1:60084 [200]: GET /index.php
-[Wed Sep  2 06:56:06 2026] 127.0.0.1:60084 Closing
-[Wed Sep  2 06:56:06 2026] 127.0.0.1:60094 Accepted
-[Wed Sep  2 06:56:06 2026] 127.0.0.1:60102 Accepted
-[Wed Sep  2 06:56:06 2026] 127.0.0.1:60094 [200]: GET /css/index.css
-[Wed Sep  2 06:56:06 2026] 127.0.0.1:60102 [200]: GET /logo.jpg
-[Wed Sep  2 06:56:06 2026] 127.0.0.1:60094 Closing
-[Wed Sep  2 06:56:06 2026] 127.0.0.1:60102 Closing
+[Wed Sep  2 07:20:47 2026] PHP 8.3.6 Development Server (http://127.0.0.1:8000) started
+[Wed Sep  2 07:21:19 2026] 127.0.0.1:32942 Accepted
+[Wed Sep  2 07:21:19 2026] 127.0.0.1:32942 [302]: GET /admin_dashboard.php
+[Wed Sep  2 07:21:19 2026] 127.0.0.1:32942 Closing
+[Wed Sep  2 07:21:19 2026] 127.0.0.1:32944 Accepted
+[Wed Sep  2 07:21:19 2026] 127.0.0.1:32944 [200]: GET /index.php
+[Wed Sep  2 07:21:19 2026] 127.0.0.1:32944 Closing
+[Wed Sep  2 07:21:19 2026] 127.0.0.1:32956 Accepted
+[Wed Sep  2 07:21:19 2026] 127.0.0.1:32958 Accepted
+[Wed Sep  2 07:21:19 2026] 127.0.0.1:32956 [200]: GET /css/index.css
+[Wed Sep  2 07:21:19 2026] 127.0.0.1:32958 [200]: GET /logo.jpg
+[Wed Sep  2 07:21:19 2026] 127.0.0.1:32956 Closing
+[Wed Sep  2 07:21:19 2026] 127.0.0.1:32958 Closing

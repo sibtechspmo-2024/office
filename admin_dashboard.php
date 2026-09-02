@@ -105,22 +105,7 @@ function sendResponse($message, $success = true) {
 $message = $_SESSION['flash_message'] ?? '';
 unset($_SESSION['flash_message']);
 
-function uploadItemImage($file) {
-    if (isset($file) && $file['error'] === UPLOAD_ERR_OK) {
-        $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $allowed = ['jpg', 'jpeg', 'png', 'webp'];
-        if (in_array(strtolower($ext), $allowed)) {
-            $filename = uniqid('img_', true) . '.' . $ext;
-            $destination = 'uploads/' . $filename;
-            if (move_uploaded_file($file['tmp_name'], $destination)) {
-                return $filename;
-            }
-        }
-    }
-    return null;
-}
-
-// APPROVE (MAY EDITABLE QUANTITIES) / REJECT WHOLE REQUEST GROUP
+// APPROVE / REJECT
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_request'])) {
     $group_id = trim($_POST['group_id'] ?? '');
     $action = $_POST['action'] ?? '';
@@ -172,7 +157,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_request'])) {
                 $stmt_deduct->execute();
             }
 
-            // I-reject o linisin ang iba pang natira kung sakali
             $stmt_rej_rem = $conn->prepare("UPDATE {$req_table} SET status = 'Rejected' WHERE request_group_id = ? AND status = 'Pending'");
             $stmt_rej_rem->bind_param("s", $group_id);
             $stmt_rej_rem->execute();
@@ -186,63 +170,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_request'])) {
 
         sendResponse("Na-reject ang Request ID: " . htmlspecialchars($group_id) . "!", true);
     }
-}
-
-// ADD NEW OFFICE SUPPLY ITEM
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_office_item'])) {
-    $item_name = trim($_POST['item_name']);
-    $unit = trim($_POST['unit']);
-    $stocks = intval($_POST['actual_stocks']);
-    $image = uploadItemImage($_FILES['item_image']);
-
-    $stmt_add = $conn->prepare("INSERT INTO items (item_name, unit, actual_stocks, image) VALUES (?, ?, ?, ?)");
-    $stmt_add->bind_param("ssis", $item_name, $unit, $stocks, $image);
-    $stmt_add->execute();
-
-    sendResponse("Bagong Office Supply Item naidagdag!", true);
-}
-
-// ADD NEW MAINTENANCE SUPPLY ITEM
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_maint_item'])) {
-    $item_name = trim($_POST['item_name']);
-    $unit = trim($_POST['unit']);
-    $stocks = intval($_POST['actual_stocks']);
-    $image = uploadItemImage($_FILES['item_image']);
-
-    $stmt_add = $conn->prepare("INSERT INTO maintenance_items (item_name, unit, actual_stocks, image) VALUES (?, ?, ?, ?)");
-    $stmt_add->bind_param("ssis", $item_name, $unit, $stocks, $image);
-    $stmt_add->execute();
-
-    sendResponse("Bagong Maintenance Item naidagdag!", true);
-}
-
-// UPDATE INVENTORY STOCK & IMAGE
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_stock'])) {
-    $item_id = intval($_POST['item_id'] ?? 0);
-    $item_type = $_POST['item_type'] ?? 'office';
-    $new_stock = intval($_POST['new_stock'] ?? 0);
-
-    $item_table = ($item_type === 'maintenance') ? 'maintenance_items' : 'items';
-    $new_image = uploadItemImage($_FILES['item_image']);
-
-    if ($new_image) {
-        $stmt_img = $conn->prepare("SELECT image FROM {$item_table} WHERE id = ?");
-        $stmt_img->bind_param("i", $item_id);
-        $stmt_img->execute();
-        $old_img = $stmt_img->get_result()->fetch_assoc();
-        if ($old_img && !empty($old_img['image']) && file_exists('uploads/' . $old_img['image'])) {
-            @unlink('uploads/' . $old_img['image']);
-        }
-
-        $stmt_up = $conn->prepare("UPDATE {$item_table} SET actual_stocks = ?, image = ? WHERE id = ?");
-        $stmt_up->bind_param("isi", $new_stock, $new_image, $item_id);
-    } else {
-        $stmt_up = $conn->prepare("UPDATE {$item_table} SET actual_stocks = ? WHERE id = ?");
-        $stmt_up->bind_param("ii", $new_stock, $item_id);
-    }
-
-    $stmt_up->execute();
-    sendResponse("Matagumpay na na-update ang inventory item!", true);
 }
 
 $office_requests = $conn->query("
@@ -260,12 +187,6 @@ $maint_requests = $conn->query("
     GROUP BY request_group_id, requisitioner_name, department, purpose
     ORDER BY max_id DESC
 ");
-
-$office_inventory = $conn->query("SELECT * FROM items ORDER BY item_name ASC");
-$maint_inventory = $conn->query("SELECT * FROM maintenance_items ORDER BY item_name ASC");
-
-$office_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM items WHERE actual_stocks <= 0")->fetch_assoc()['cnt'] ?? 0;
-$maint_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_items WHERE actual_stocks <= 0")->fetch_assoc()['cnt'] ?? 0;
 ?>
 
 <!DOCTYPE html>
@@ -288,10 +209,10 @@ $maint_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_item
         </a>
         <div class="d-flex flex-wrap align-items-center gap-2">
             <a href="admin_office.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
-                <i class="fa-solid fa-box-open me-1"></i> Office Page
+                <i class="fa-solid fa-box-open me-1"></i> Office Supplies Page
             </a>
             <a href="admin_maintenance.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
-                <i class="fa-solid fa-wrench me-1"></i> Maintenance Page
+                <i class="fa-solid fa-wrench me-1"></i> Maintenance Supplies Page
             </a>
             <a href="in_stock.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
                 <i class="fa-solid fa-boxes-stacked me-1"></i> In Stock Items
@@ -324,18 +245,8 @@ $maint_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_item
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="office-inv-tab" data-bs-toggle="tab" data-bs-target="#office-inv" type="button">
-                    <i class="fa-solid fa-boxes-stacked me-1"></i> Office Inventory
-                </button>
-            </li>
-            <li class="nav-item">
                 <button class="nav-link" id="maint-req-tab" data-bs-toggle="tab" data-bs-target="#maint-req" type="button">
                     <i class="fa-solid fa-screwdriver-wrench me-1"></i> Maintenance Requests
-                </button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="maint-inv-tab" data-bs-toggle="tab" data-bs-target="#maint-inv" type="button">
-                    <i class="fa-solid fa-warehouse me-1"></i> Maintenance Inventory
                 </button>
             </li>
         </ul>
@@ -347,8 +258,8 @@ $maint_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_item
             <div class="card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold text-dark mb-0">Pending Office Supply Requests</h5>
-                    <a href="admin_office.php" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                        <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Open Separate Office Page
+                    <a href="admin_office.php" class="btn btn-sm btn-logo-primary rounded-pill px-3">
+                        <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Go to Office Page & Inventory
                     </a>
                 </div>
                 <div class="table-responsive table-container">
@@ -390,81 +301,13 @@ $maint_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_item
             </div>
         </div>
 
-        <!-- Tab 2: Office Inventory -->
-        <div class="tab-pane fade" id="office-inv">
-            <div class="card p-4">
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                    <h5 class="fw-bold text-dark mb-0">Office Supply Inventory</h5>
-                    <div class="d-flex gap-2">
-                        <a href="export_out_of_stock.php?type=office" class="btn btn-success rounded-pill btn-sm px-3 fw-bold">
-                            <i class="fa-solid fa-file-excel me-1"></i> Export Out of Stock (Excel)
-                            <?php if($office_out_of_stock > 0): ?>
-                                <span class="badge bg-white text-success ms-1"><?= $office_out_of_stock ?></span>
-                            <?php endif; ?>
-                        </a>
-                        <button class="btn btn-logo-primary rounded-pill btn-sm px-3" data-bs-toggle="modal" data-bs-target="#addOfficeItemModal">
-                            <i class="fa-solid fa-plus me-1"></i> Dagdag Office Item
-                        </button>
-                    </div>
-                </div>
-                <div class="table-responsive table-container">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Image</th>
-                                <th>ID</th>
-                                <th>Item Name</th>
-                                <th>Unit</th>
-                                <th>Actual Stocks</th>
-                                <th>Status</th>
-                                <th class="text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while($item = $office_inventory->fetch_assoc()): ?>
-                                <tr>
-                                    <td>
-                                        <?php if (!empty($item['image']) && file_exists('uploads/' . $item['image'])): ?>
-                                            <img src="uploads/<?= htmlspecialchars($item['image']) ?>" class="table-img border">
-                                        <?php else: ?>
-                                            <div class="table-img bg-light d-flex align-items-center justify-content-center text-muted border">
-                                                <i class="fa-regular fa-image"></i>
-                                            </div>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td class="text-muted small">#<?= $item['id'] ?></td>
-                                    <td class="fw-semibold text-dark"><?= htmlspecialchars($item['item_name']) ?></td>
-                                    <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($item['unit']) ?></span></td>
-                                    <td class="fw-bold fs-6"><?= $item['actual_stocks'] ?></td>
-                                    <td>
-                                        <?= ($item['actual_stocks'] > 0)
-                                            ? '<span class="badge bg-success-subtle text-success border border-success-subtle badge-stock">With Stock</span>'
-                                            : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle badge-stock">Out of Stock</span>' ?>
-                                    </td>
-                                    <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3 update-btn"
-                                                data-id="<?= $item['id'] ?>"
-                                                data-name="<?= htmlspecialchars($item['item_name'], ENT_QUOTES) ?>"
-                                                data-stocks="<?= $item['actual_stocks'] ?>"
-                                                data-type="office">
-                                            <i class="fa-solid fa-pen-to-square me-1"></i> Update
-                                        </button>
-                                    </td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tab 3: Maintenance Requests -->
+        <!-- Tab 2: Maintenance Requests -->
         <div class="tab-pane fade" id="maint-req">
             <div class="card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold text-dark mb-0">Pending Maintenance Supply Requests</h5>
-                    <a href="admin_maintenance.php" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                        <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Open Separate Maintenance Page
+                    <a href="admin_maintenance.php" class="btn btn-sm btn-logo-primary rounded-pill px-3">
+                        <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Go to Maintenance Page & Inventory
                     </a>
                 </div>
                 <div class="table-responsive table-container">
@@ -505,74 +348,6 @@ $maint_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_item
                 </div>
             </div>
         </div>
-
-        <!-- Tab 4: Maintenance Inventory -->
-        <div class="tab-pane fade" id="maint-inv">
-            <div class="card p-4">
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                    <h5 class="fw-bold text-dark mb-0">Maintenance Inventory</h5>
-                    <div class="d-flex gap-2">
-                        <a href="export_out_of_stock.php?type=maintenance" class="btn btn-success rounded-pill btn-sm px-3 fw-bold">
-                            <i class="fa-solid fa-file-excel me-1"></i> Export Out of Stock (Excel)
-                            <?php if($maint_out_of_stock > 0): ?>
-                                <span class="badge bg-white text-success ms-1"><?= $maint_out_of_stock ?></span>
-                            <?php endif; ?>
-                        </a>
-                        <button class="btn btn-logo-accent rounded-pill btn-sm px-3 fw-bold text-dark" data-bs-toggle="modal" data-bs-target="#addMaintItemModal">
-                            <i class="fa-solid fa-plus me-1"></i> Dagdag Maintenance Item
-                        </button>
-                    </div>
-                </div>
-                <div class="table-responsive table-container">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Image</th>
-                                <th>ID</th>
-                                <th>Item Name</th>
-                                <th>Unit</th>
-                                <th>Actual Stocks</th>
-                                <th>Status</th>
-                                <th class="text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while($item = $maint_inventory->fetch_assoc()): ?>
-                                <tr>
-                                    <td>
-                                        <?php if (!empty($item['image']) && file_exists('uploads/' . $item['image'])): ?>
-                                            <img src="uploads/<?= htmlspecialchars($item['image']) ?>" class="table-img border">
-                                        <?php else: ?>
-                                            <div class="table-img bg-light d-flex align-items-center justify-content-center text-muted border">
-                                                <i class="fa-regular fa-image"></i>
-                                            </div>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td class="text-muted small">#<?= $item['id'] ?></td>
-                                    <td class="fw-semibold text-dark"><?= htmlspecialchars($item['item_name']) ?></td>
-                                    <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($item['unit']) ?></span></td>
-                                    <td class="fw-bold fs-6"><?= $item['actual_stocks'] ?></td>
-                                    <td>
-                                        <?= ($item['actual_stocks'] > 0)
-                                            ? '<span class="badge bg-success-subtle text-success border border-success-subtle badge-stock">With Stock</span>'
-                                            : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle badge-stock">Out of Stock</span>' ?>
-                                    </td>
-                                    <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-warning text-dark rounded-pill px-3 fw-bold update-btn"
-                                                data-id="<?= $item['id'] ?>"
-                                                data-name="<?= htmlspecialchars($item['item_name'], ENT_QUOTES) ?>"
-                                                data-stocks="<?= $item['actual_stocks'] ?>"
-                                                data-type="maintenance">
-                                            <i class="fa-solid fa-pen-to-square me-1"></i> Update
-                                        </button>
-                                    </td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -602,110 +377,6 @@ $maint_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_item
   </div>
 </div>
 
-<!-- Modal para sa Update Stock & Image -->
-<div class="modal fade" id="updateStockModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <form method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow ajax-form">
-      <div class="modal-header text-white" style="background-color: var(--logo-blue);">
-        <h5 class="modal-title fs-6 fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Update Stock & Image</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body p-4">
-        <input type="hidden" name="update_stock" value="1">
-        <input type="hidden" name="item_id" id="update_item_id">
-        <input type="hidden" name="item_type" id="update_item_type">
-
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Item Name</label>
-            <input type="text" id="update_item_name" class="form-control bg-light" readonly>
-        </div>
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Bagong Bilang ng Stock</label>
-            <input type="number" name="new_stock" id="update_new_stock" class="form-control" min="0" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Bagong Larawan (Optional)</label>
-            <input type="file" name="item_image" class="form-control" accept="image/*">
-        </div>
-      </div>
-      <div class="modal-footer border-0 bg-light">
-        <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-logo-primary rounded-pill px-4">I-save ang Pagbabago</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Modal para sa Magdagdag ng Office Item -->
-<div class="modal fade" id="addOfficeItemModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <form method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow ajax-form">
-      <div class="modal-header text-white" style="background-color: var(--logo-blue);">
-        <h5 class="modal-title fs-6 fw-bold"><i class="fa-solid fa-plus me-2"></i>Dagdag Office Supply Item</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body p-4">
-        <input type="hidden" name="add_office_item" value="1">
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Item Name</label>
-            <input type="text" name="item_name" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Unit (e.g., pcs, box, ream)</label>
-            <input type="text" name="unit" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Actual Stocks</label>
-            <input type="number" name="actual_stocks" class="form-control" min="0" value="0" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Larawan</label>
-            <input type="file" name="item_image" class="form-control" accept="image/*">
-        </div>
-      </div>
-      <div class="modal-footer border-0 bg-light">
-        <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-logo-primary rounded-pill px-4">I-save ang Item</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Modal para sa Magdagdag ng Maintenance Item -->
-<div class="modal fade" id="addMaintItemModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <form method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow ajax-form">
-      <div class="modal-header bg-logo-accent text-dark" style="background-color: var(--logo-yellow);">
-        <h5 class="modal-title fs-6 fw-bold"><i class="fa-solid fa-plus me-2"></i>Dagdag Maintenance Item</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body p-4">
-        <input type="hidden" name="add_maint_item" value="1">
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Item Name</label>
-            <input type="text" name="item_name" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Unit (e.g., pcs, box, set)</label>
-            <input type="text" name="unit" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Actual Stocks</label>
-            <input type="number" name="actual_stocks" class="form-control" min="0" value="0" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Larawan</label>
-            <input type="file" name="item_image" class="form-control" accept="image/*">
-        </div>
-      </div>
-      <div class="modal-footer border-0 bg-light">
-        <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-logo-accent rounded-pill px-4 fw-bold">I-save ang Item</button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -714,15 +385,6 @@ document.addEventListener("DOMContentLoaded", function() {
     if (window.Notification && Notification.permission !== "granted") {
         Notification.requestPermission();
     }
-});
-
-// Update Modal data binding
-$(document).on('click', '.update-btn', function() {
-    $('#update_item_id').val($(this).data('id'));
-    $('#update_item_name').val($(this).data('name'));
-    $('#update_new_stock').val($(this).data('stocks'));
-    $('#update_item_type').val($(this).data('type'));
-    new bootstrap.Modal(document.getElementById('updateStockModal')).show();
 });
 
 // View request modal setup at pag-fetch ng request items gamit ang AJAX
