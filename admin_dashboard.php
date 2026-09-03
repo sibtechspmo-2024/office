@@ -276,9 +276,6 @@ $stock_history = $conn->query($sh_sql);
             <a href="admin_maintenance.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
                 <i class="fa-solid fa-wrench me-1"></i> Maintenance Page
             </a>
-            <a href="in_stock.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
-                <i class="fa-solid fa-clock-rotate-left me-1"></i> Stock Update History
-            </a>
             <a href="export_out_of_stock.php?type=all" class="btn btn-logo-accent btn-sm rounded-pill px-3">
                 <i class="fa-solid fa-file-excel me-1"></i> Export Out of Stock (Excel)
             </a>
