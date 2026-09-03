@@ -307,37 +307,17 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                         <span class="badge bg-warning text-dark rounded-pill fw-extrabold fs-6 shadow-sm" id="cart-count">0 items</span>
                     </div>
                     <div class="card-body p-4">
-                        <div class="mb-3">
-                            <label class="form-label-custom">Requisitioner Name</label>
-                            <input type="text" name="requisitioner_name" class="form-control form-control-sm fw-semibold border-secondary-subtle" value="<?= htmlspecialchars($default_fullname) ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label-custom">Department / Unit</label>
-                            <input type="text" name="department" class="form-control form-control-sm fw-semibold border-secondary-subtle" placeholder="Halimbawa: SPMO, HR, IT" required>
-                        </div>
-                        <div class="row g-2 mb-3">
-                            <div class="col-7">
-                                <label class="form-label-custom">Purpose</label>
-                                <input type="text" name="purpose" class="form-control form-control-sm fw-semibold border-secondary-subtle" placeholder="Layunin ng order" required>
-                            </div>
-                            <div class="col-5">
-                                <label class="form-label-custom">Date Needed</label>
-                                <input type="date" name="date_needed" class="form-control form-control-sm fw-semibold border-secondary-subtle" required>
-                            </div>
-                        </div>
-
-                        <hr class="my-3 text-secondary opacity-25">
                         <h6 class="fw-bold mb-3 small text-uppercase text-dark d-flex align-items-center justify-content-between">
                             <span><i class="bi bi-bag-check-fill text-primary me-1"></i>Selected Order Items:</span>
                         </h6>
-                        <div id="cart-list" class="cart-items-container mb-3" style="max-height: 280px; overflow-y: auto;">
+                        <div id="cart-list" class="cart-items-container mb-4" style="max-height: 320px; overflow-y: auto;">
                             <p class="text-center text-muted my-4 small" id="empty-cart-msg">
                                 <i class="bi bi-cart-x fs-2 d-block text-secondary mb-1"></i>
                                 Walang napiling item sa cart.
                             </p>
                         </div>
 
-                        <button type="button" id="submitBtn" class="btn btn-checkout w-100 shadow-sm" onclick="goToCheckoutPage()" disabled>
+                        <button type="button" id="submitBtn" class="btn btn-checkout w-100 shadow-sm py-2" onclick="goToCheckoutPage()" disabled>
                             <i class="bi bi-arrow-right-circle-fill me-1"></i> Proceed to Place Order Page
                         </button>
                     </div>
