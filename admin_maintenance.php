@@ -146,6 +146,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_maint_item'])) {
     $stmt_add = $conn->prepare("INSERT INTO maintenance_items (item_name, unit, actual_stocks, image) VALUES (?, ?, ?, ?)");
     $stmt_add->bind_param("ssis", $item_name, $unit, $stocks, $image);
     $stmt_add->execute();
+    $new_id = $stmt_add->insert_id;
+
+    // Log to stock history
+    $updater = $_SESSION['username'] ?? 'Admin';
+    $stmt_log = $conn->prepare("INSERT INTO stock_history (item_id, item_name, category, previous_stock, new_stock, added_qty, updated_by) VALUES (?, ?, 'Maintenance', 0, ?, ?, ?)");
+    $stmt_log->bind_param("isiis", $new_id, $item_name, $stocks, $stocks, $updater);
+    $stmt_log->execute();
 
     sendResponse("Bagong Maintenance Supply Item naidagdag!", true);
 }
@@ -156,13 +163,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_stock'])) {
     $new_stock = intval($_POST['new_stock'] ?? 0);
     $new_image = uploadItemImage($_FILES['item_image']);
 
+    // Kuhanin ang lumang detalye ng stock at pangalan
+    $stmt_old = $conn->prepare("SELECT item_name, actual_stocks, image FROM maintenance_items WHERE id = ?");
+    $stmt_old->bind_param("i", $item_id);
+    $stmt_old->execute();
+    $old_data = $stmt_old->get_result()->fetch_assoc();
+
+    $prev_stock = $old_data['actual_stocks'] ?? 0;
+    $item_name = $old_data['item_name'] ?? 'Unknown Item';
+    $added_qty = $new_stock - $prev_stock;
+
     if ($new_image) {
-        $stmt_img = $conn->prepare("SELECT image FROM maintenance_items WHERE id = ?");
-        $stmt_img->bind_param("i", $item_id);
-        $stmt_img->execute();
-        $old_img = $stmt_img->get_result()->fetch_assoc();
-        if ($old_img && !empty($old_img['image']) && file_exists('uploads/' . $old_img['image'])) {
-            @unlink('uploads/' . $old_img['image']);
+        if ($old_data && !empty($old_data['image']) && file_exists('uploads/' . $old_data['image'])) {
+            @unlink('uploads/' . $old_data['image']);
         }
 
         $stmt_up = $conn->prepare("UPDATE maintenance_items SET actual_stocks = ?, image = ? WHERE id = ?");
@@ -173,6 +186,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_stock'])) {
     }
 
     $stmt_up->execute();
+
+    // Log to stock history
+    $updater = $_SESSION['username'] ?? 'Admin';
+    $stmt_log = $conn->prepare("INSERT INTO stock_history (item_id, item_name, category, previous_stock, new_stock, added_qty, updated_by) VALUES (?, ?, 'Maintenance', ?, ?, ?, ?)");
+    $stmt_log->bind_param("isiiis", $item_id, $item_name, $prev_stock, $new_stock, $added_qty, $updater);
+    $stmt_log->execute();
+
     sendResponse("Matagumpay na na-update ang maintenance supply inventory!", true);
 }
 
