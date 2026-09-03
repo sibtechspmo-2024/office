@@ -161,12 +161,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_request'])) {
             $stmt_rej_rem->bind_param("s", $group_id);
             $stmt_rej_rem->execute();
 
+            // Notify user
+            $stmt_usr = $conn->prepare("SELECT user_id FROM {$req_table} WHERE request_group_id = ? LIMIT 1");
+            $stmt_usr->bind_param("s", $group_id);
+            $stmt_usr->execute();
+            $usr_res = $stmt_usr->get_result()->fetch_assoc();
+            if ($usr_res && !empty($usr_res['user_id'])) {
+                $notif_msg = "Ang iyong order request (#" . $group_id . ") ay na-aprubahan na ng Admin!";
+                $stmt_notif = $conn->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)");
+                $stmt_notif->bind_param("is", $usr_res['user_id'], $notif_msg);
+                $stmt_notif->execute();
+            }
+
             sendResponse("Matagumpay na na-update at na-approve ang Order ID: " . htmlspecialchars($group_id) . "!", true);
         }
     } elseif ($action === 'Rejected') {
+        // Notify user before reject
+        $stmt_usr = $conn->prepare("SELECT user_id FROM {$req_table} WHERE request_group_id = ? LIMIT 1");
+        $stmt_usr->bind_param("s", $group_id);
+        $stmt_usr->execute();
+        $usr_res = $stmt_usr->get_result()->fetch_assoc();
+
         $stmt_rej = $conn->prepare("UPDATE {$req_table} SET status = 'Rejected' WHERE request_group_id = ? AND status = 'Pending'");
         $stmt_rej->bind_param("s", $group_id);
         $stmt_rej->execute();
+
+        if ($usr_res && !empty($usr_res['user_id'])) {
+            $notif_msg = "Ang iyong order request (#" . $group_id . ") ay na-reject.";
+            $stmt_notif = $conn->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)");
+            $stmt_notif->bind_param("is", $usr_res['user_id'], $notif_msg);
+            $stmt_notif->execute();
+        }
 
         sendResponse("Na-reject ang Order ID: " . htmlspecialchars($group_id) . "!", true);
     }
