@@ -150,29 +150,29 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
         <a class="navbar-brand fw-bold text-white d-flex align-items-center" href="user_dashboard.php">
             <img src="logo.jpg" alt="SIBTECH Logo" class="navbar-brand-logo rounded-circle border border-2 border-white shadow-sm">
             <div class="lh-1 ms-1">
-                <span class="fs-5 d-block fw-extrabold tracking-tight">SIBTECH STORE</span>
-                <small class="fw-medium text-white-50" style="font-size: 0.75rem;">Central Supply Room Portal</small>
+                <span class="fs-5 d-block fw-extrabold tracking-tight">SIBTECH OFFICE AND MAINTENANCE SUPPLY</span>
+                <small class="fw-medium text-white-50" style="font-size: 0.75rem;">Central Supply Room </small>
             </div>
         </a>
         <div class="d-flex align-items-center gap-2">
             <!-- NOTIFICATION DROPDOWN -->
             <div class="dropdown me-1">
                 <button class="btn btn-light btn-sm fw-bold position-relative dropdown-toggle rounded-pill px-3 text-dark border-0 shadow-sm" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-bell-fill text-primary me-1"></i> Abiso
+                    <i class="bi bi-bell-fill text-primary me-1"></i> Notifications
                     <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2" aria-labelledby="notificationDropdown" style="width: 330px; max-height: 400px; overflow-y: auto;" id="notification-list">
-                    <li><h6 class="dropdown-header fw-bold text-dark">Mga Abiso</h6></li>
+                    <li><h6 class="dropdown-header fw-bold text-dark">Notifications</h6></li>
                     <li><hr class="dropdown-divider my-1"></li>
                     <li><span class="dropdown-item text-muted small text-center py-3">Kumukuha ng abiso...</span></li>
                 </ul>
             </div>
 
             <a href="place_order.php" class="btn btn-warning btn-sm fw-bold rounded-pill px-3 me-1 text-dark">
-                <i class="bi bi-cart-plus-fill me-1"></i> Place Order
+                <i class="bi bi-cart-plus-fill me-1"></i> Place Requests
             </a>
             <a href="request_history.php" class="btn btn-outline-light btn-sm fw-semibold rounded-pill px-3 me-1">
-                <i class="bi bi-bag-check-fill me-1"></i> My Orders
+                <i class="bi bi-bag-check-fill me-1"></i> My Requests
             </a>
             <span class="text-white me-2 d-none d-lg-inline small fw-bold bg-white bg-opacity-10 px-3 py-1 rounded-pill border border-white border-opacity-25">
                 <i class="bi bi-person-circle me-1"></i><?= htmlspecialchars($default_fullname) ?>
@@ -192,13 +192,13 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
     <div class="hero-banner">
         <div class="row align-items-center">
             <div class="col-lg-7 mb-3 mb-lg-0">
-                <span class="badge bg-warning text-dark fw-extrabold mb-2 px-3 py-1 rounded-pill text-uppercase shadow-sm" style="letter-spacing: 0.5px;">Central Supply Store</span>
-                <h2 class="mb-2">Mag-order ng Inyong Supplies online!</h2>
-                <p class="mb-0 hero-subtitle">Pumili ng mga kagamitan para sa Office at Maintenance at isumite ang inyong order request.</p>
+                <span class="badge bg-warning text-dark fw-extrabold mb-2 px-3 py-1 rounded-pill text-uppercase shadow-sm" style="letter-spacing: 0.5px;">Central Supply Room</span>
+                <h2 class="mb-2">Select supply </h2>
+              
             </div>
             <div class="col-lg-5">
                 <div class="input-group hero-search-box">
-                    <input type="text" id="searchInput" class="form-control" placeholder="Maghanap ng supply name..." onkeyup="filterItems()">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search supply name..." onkeyup="filterItems()">
                     <button class="btn" type="button"><i class="bi bi-search me-1"></i> Search</button>
                 </div>
             </div>
@@ -231,7 +231,7 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                     <?php if(empty($office_items)): ?>
                         <div class="col-12 text-center py-5 bg-white rounded-3 border">
                             <i class="bi bi-box-seam fs-1 text-muted d-block mb-2"></i>
-                            <h6 class="fw-bold text-dark mb-0">Walang available na Office Supply Items sa kasalukuyan.</h6>
+                            <h6 class="fw-bold text-dark mb-0">NO Office supply at this moment.</h6>
                         </div>
                     <?php endif; ?>
                     <?php foreach($office_items as $item): ?>
@@ -254,7 +254,7 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                                         <div class="product-unit mb-3">Unit: <span class="badge bg-light text-dark border ms-1 fw-bold"><?= htmlspecialchars($item['unit']) ?></span></div>
                                     </div>
                                     <button type="button" class="btn btn-add-cart py-2" onclick="addToCart(<?= $item['id'] ?>, '<?= htmlspecialchars(addslashes($item['item_name'])) ?>', '<?= htmlspecialchars($item['unit']) ?>', <?= $item['actual_stocks'] ?>)">
-                                        <i class="bi bi-cart-plus-fill me-1"></i> Add to Cart
+                                        <i class="bi bi-cart-plus-fill me-1"></i> Add to Request
                                     </button>
                                 </div>
                             </div>
@@ -267,7 +267,7 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                     <?php if(empty($maint_items)): ?>
                         <div class="col-12 text-center py-5 bg-white rounded-3 border">
                             <i class="bi bi-tools fs-1 text-muted d-block mb-2"></i>
-                            <h6 class="fw-bold text-dark mb-0">Walang available na Maintenance Items sa kasalukuyan.</h6>
+                            <h6 class="fw-bold text-dark mb-0">NO available maintenance supply.</h6>
                         </div>
                     <?php endif; ?>
                     <?php foreach($maint_items as $item): ?>
@@ -290,7 +290,7 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                                         <div class="product-unit mb-3">Unit: <span class="badge bg-light text-dark border ms-1 fw-bold"><?= htmlspecialchars($item['unit']) ?></span></div>
                                     </div>
                                     <button type="button" class="btn btn-add-cart py-2" onclick="addToCart(<?= $item['id'] ?>, '<?= htmlspecialchars(addslashes($item['item_name'])) ?>', '<?= htmlspecialchars($item['unit']) ?>', <?= $item['actual_stocks'] ?>)">
-                                        <i class="bi bi-cart-plus-fill me-1"></i> Add to Cart
+                                        <i class="bi bi-cart-plus-fill me-1"></i> Add to Request
                                     </button>
                                 </div>
                             </div>
@@ -303,22 +303,22 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
             <div class="col-lg-4">
                 <div class="card cart-card">
                     <div class="cart-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 fw-bold"><i class="bi bi-cart3 me-2"></i>Shopping Cart</h5>
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-cart3 me-2"></i>Request Cart</h5>
                         <span class="badge bg-warning text-dark rounded-pill fw-extrabold fs-6 shadow-sm" id="cart-count">0 items</span>
                     </div>
                     <div class="card-body p-4">
                         <h6 class="fw-bold mb-3 small text-uppercase text-dark d-flex align-items-center justify-content-between">
-                            <span><i class="bi bi-bag-check-fill text-primary me-1"></i>Selected Order Items:</span>
+                            <span><i class="bi bi-bag-check-fill text-primary me-1"></i>Selected Request Supply:</span>
                         </h6>
                         <div id="cart-list" class="cart-items-container mb-4" style="max-height: 320px; overflow-y: auto;">
                             <p class="text-center text-muted my-4 small" id="empty-cart-msg">
                                 <i class="bi bi-cart-x fs-2 d-block text-secondary mb-1"></i>
-                                Walang napiling item sa cart.
+                                No selected supply
                             </p>
                         </div>
 
                         <button type="button" id="submitBtn" class="btn btn-checkout w-100 shadow-sm py-2" onclick="goToCheckoutPage()" disabled>
-                            <i class="bi bi-arrow-right-circle-fill me-1"></i> Proceed to Place Order Page
+                            <i class="bi bi-arrow-right-circle-fill me-1"></i> Proceed to Place Request Page
                         </button>
                     </div>
                 </div>
@@ -480,7 +480,7 @@ function renderCart() {
     localStorage.setItem('sibtech_cart', JSON.stringify(cart));
 
     if (keys.length === 0) {
-        cartList.innerHTML = `<p class="text-center text-muted my-4 small"><i class="bi bi-cart-x fs-2 d-block text-secondary mb-1"></i>Walang napiling item sa cart.</p>`;
+        cartList.innerHTML = `<p class="text-center text-muted my-4 small"><i class="bi bi-cart-x fs-2 d-block text-secondary mb-1"></i>No selected supply.</p>`;
         submitBtn.disabled = true;
         return;
     }
