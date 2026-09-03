@@ -1,0 +1,77 @@
+:root {
+    --logo-blue: #1b4f9c;
+    --logo-blue-hover: #163f7d;
+    --logo-yellow: #f5be16;
+    --logo-dark: #111827;
+    --logo-light-bg: #f3f4f6;
+}
+
+body {
+    background-color: var(--logo-light-bg);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #1f2937;
+}
+
+.navbar-admin {
+    background-color: var(--logo-blue) !important;
+    padding: 0.75rem 1rem;
+}
+
+.navbar-brand-logo {
+    width: 42px;
+    height: auto;
+    margin-right: 10px;
+}
+
+.card {
+    border: none;
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    background-color: #ffffff;
+}
+
+.btn-logo-primary {
+    background-color: var(--logo-blue);
+    color: #ffffff;
+    border: none;
+    font-weight: 600;
+}
+
+.btn-logo-primary:hover {
+    background-color: var(--logo-blue-hover);
+    color: #ffffff;
+}
+
+.btn-logo-accent {
+    background-color: var(--logo-yellow);
+    color: #111827;
+    border: none;
+    font-weight: 700;
+}
+
+.btn-logo-accent:hover {
+    background-color: #d9a50b;
+    color: #111827;
+}
+
+.table-img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.table-container {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.badge-stock {
+    font-size: 0.85rem;
+    padding: 0.4em 0.8em;
+    border-radius: 50px;
+}
+
+.text-logo-blue {
+    color: var(--logo-blue) !important;
+}

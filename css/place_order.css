@@ -1,0 +1,38 @@
+:root {
+    --logo-blue: #1b4f9c;
+    --logo-blue-hover: #163f7d;
+    --logo-yellow: #f5be16;
+    --logo-dark: #111827;
+    --logo-light-bg: #f3f4f6;
+}
+
+body {
+    background-color: var(--logo-light-bg);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #1f2937;
+}
+
+.navbar-ecommerce {
+    background-color: var(--logo-blue) !important;
+    padding: 0.75rem 0;
+}
+
+.bg-logo-blue {
+    background-color: var(--logo-blue) !important;
+}
+
+.btn-primary-logo {
+    background-color: var(--logo-blue);
+    color: #ffffff;
+    border: none;
+}
+
+.btn-primary-logo:hover {
+    background-color: var(--logo-blue-hover);
+    color: #ffffff;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: var(--logo-blue);
+    box-shadow: 0 0 0 0.25rem rgba(27, 79, 156, 0.2);
+}

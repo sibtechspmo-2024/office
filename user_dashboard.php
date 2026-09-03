@@ -17,7 +17,7 @@ $user_id = intval($_SESSION['user_id']);
 // --- AJAX HANDLER PARA SA NOTIFICATIONS (GET) ---
 if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_notifications') {
     header('Content-Type: application/json');
-    
+
     $notif_stmt = $conn->prepare("SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 10");
     $notif_stmt->bind_param("i", $user_id);
     $notif_stmt->execute();
@@ -29,8 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
     $unread_count = $unread_stmt->get_result()->fetch_assoc()['unread_count'] ?? 0;
 
     echo json_encode([
-        'status' => 'success', 
-        'notifications' => $notifications, 
+        'status' => 'success',
+        'notifications' => $notifications,
         'unread_count' => $unread_count
     ]);
     exit;
@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['mark_read'])) {
 // --- AJAX HANDLER PARA SA SUBMIT REQUEST ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_supply'])) {
     header('Content-Type: application/json');
-    
+
     $request_type = $_POST['request_type'] ?? 'office';
     $requisitioner_name = trim($_POST['requisitioner_name'] ?? '');
     $department = trim($_POST['department'] ?? '');
@@ -62,12 +62,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_supply'])) {
     if (!empty($item_ids) && is_array($item_ids)) {
         $prefix = ($request_type === 'maintenance') ? 'MNT-' : 'REQ-';
         $request_group_id = $prefix . date('YmdHis') . '-' . rand(100, 999);
-        
+
         $request_table = ($request_type === 'maintenance') ? 'maintenance_requests' : 'supply_requests';
         $item_table = ($request_type === 'maintenance') ? 'maintenance_items' : 'items';
 
         $stmt = $conn->prepare("INSERT INTO {$request_table} (request_group_id, user_id, requisitioner_name, department, item_id, quantity, purpose, date_needed) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $update_stock_stmt = $conn->prepare("UPDATE {$item_table} SET actual_stocks = actual_stocks - ? WHERE id = ? AND actual_stocks >= ?");
+        $check_stock_stmt = $conn->prepare("SELECT actual_stocks, item_name FROM {$item_table} WHERE id = ?");
 
         $inserted_count = 0;
         $conn->begin_transaction();
@@ -78,15 +78,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_supply'])) {
                 $qty = intval($quantities[$index] ?? 0);
 
                 if ($item_id > 0 && $qty > 0) {
+                    $check_stock_stmt->bind_param("i", $item_id);
+                    $check_stock_stmt->execute();
+                    $chk_res = $check_stock_stmt->get_result()->fetch_assoc();
+
+                    if (!$chk_res || $chk_res['actual_stocks'] < $qty) {
+                        $iname = $chk_res['item_name'] ?? 'Selected Item';
+                        throw new Exception("Kulang ang available stock para sa item na: " . $iname);
+                    }
+
                     $stmt->bind_param("sississs", $request_group_id, $user_id, $requisitioner_name, $department, $item_id, $qty, $purpose, $date_needed);
                     $stmt->execute();
-
-                    $update_stock_stmt->bind_param("iii", $qty, $item_id, $qty);
-                    $update_stock_stmt->execute();
-
-                    if ($update_stock_stmt->affected_rows === 0) {
-                        throw new Exception("Kulang ang available stock para sa napiling item.");
-                    }
                     $inserted_count++;
                 }
             }
@@ -130,108 +132,130 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIBTECH - Supply Order Portal</title>
+    <title>SIBTECH - Supply Portal Store</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <style>
-        :root {
-            --sibtech-primary: #008080;
-            --sibtech-primary-hover: #006666;
-            --sibtech-dark: #0b2545;
-            --sibtech-light-bg: #f4f9f9;
-        }
-        body { background-color: var(--sibtech-light-bg); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .navbar-sibtech { background-color: var(--sibtech-dark); }
-        .btn-sibtech { background-color: var(--sibtech-primary); color: #ffffff; border: none; }
-        .btn-sibtech:hover { background-color: var(--sibtech-primary-hover); color: #ffffff; }
-        .btn-outline-sibtech { color: var(--sibtech-primary); border-color: var(--sibtech-primary); }
-        .btn-outline-sibtech:hover, .btn-check:checked + .btn-outline-sibtech { background-color: var(--sibtech-primary); color: #ffffff; border-color: var(--sibtech-primary); }
-        .item-card { transition: all 0.25s ease; cursor: pointer; border: 1px solid #e2e8f0; }
-        .item-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0, 128, 128, 0.15); border-color: var(--sibtech-primary); }
-        .cart-sticky { position: sticky; top: 80px; }
-        .cart-items-container { max-height: 280px; overflow-y: auto; }
-        .bg-sibtech-gradient { background: linear-gradient(135deg, var(--sibtech-dark) 0%, var(--sibtech-primary) 100%); }
-        .product-img { height: 110px; object-fit: contain; }
-        .badge-sibtech { background-color: rgba(0, 128, 128, 0.1); color: var(--sibtech-primary); border: 1px solid rgba(0, 128, 128, 0.3); }
-    </style>
+    <link rel="stylesheet" href="css/user_dashboard.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1b4f9c">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark navbar-sibtech sticky-top shadow-sm">
+<!-- TOP E-COMMERCE NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark navbar-ecommerce sticky-top">
     <div class="container-fluid px-4">
         <a class="navbar-brand fw-bold text-white d-flex align-items-center" href="user_dashboard.php">
-            <i class="bi bi-cpu-fill text-info fs-3 me-2"></i>
-            <span>SIBTECH <span class="fw-light text-white-50">Portal</span></span>
+            <img src="logo.jpg" alt="SIBTECH Logo" class="navbar-brand-logo rounded-circle border border-2 border-white shadow-sm">
+            <div class="lh-1 ms-1">
+                <span class="fs-5 d-block fw-extrabold tracking-tight">SIBTECH STORE</span>
+                <small class="fw-medium text-white-50" style="font-size: 0.75rem;">Central Supply Room Portal</small>
+            </div>
         </a>
-        <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center gap-2">
             <!-- NOTIFICATION DROPDOWN -->
-            <div class="dropdown me-3">
-                <button class="btn btn-outline-light btn-sm position-relative dropdown-toggle" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-bell-fill"></i>
+            <div class="dropdown me-1">
+                <button class="btn btn-light btn-sm fw-bold position-relative dropdown-toggle rounded-pill px-3 text-dark border-0 shadow-sm" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-bell-fill text-primary me-1"></i> Abiso
                     <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="notificationDropdown" style="width: 320px; max-height: 400px; overflow-y: auto;" id="notification-list">
-                    <li><h6 class="dropdown-header">Mga Abiso</h6></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><span class="dropdown-item text-muted small text-center py-2">Kumukuha ng abiso...</span></li>
+                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2" aria-labelledby="notificationDropdown" style="width: 330px; max-height: 400px; overflow-y: auto;" id="notification-list">
+                    <li><h6 class="dropdown-header fw-bold text-dark">Mga Abiso</h6></li>
+                    <li><hr class="dropdown-divider my-1"></li>
+                    <li><span class="dropdown-item text-muted small text-center py-3">Kumukuha ng abiso...</span></li>
                 </ul>
             </div>
 
-            <a href="request_history.php" class="btn btn-outline-light btn-sm me-3"><i class="bi bi-clock-history me-1"></i>History</a>
-            <span class="text-white me-3 d-none d-sm-inline"><i class="bi bi-person-circle me-1"></i><?= htmlspecialchars($default_fullname) ?></span>
-            <a href="logout.php" class="btn btn-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
+            <a href="place_order.php" class="btn btn-warning btn-sm fw-bold rounded-pill px-3 me-1 text-dark">
+                <i class="bi bi-cart-plus-fill me-1"></i> Place Order
+            </a>
+            <a href="request_history.php" class="btn btn-outline-light btn-sm fw-semibold rounded-pill px-3 me-1">
+                <i class="bi bi-bag-check-fill me-1"></i> My Orders
+            </a>
+            <span class="text-white me-2 d-none d-lg-inline small fw-bold bg-white bg-opacity-10 px-3 py-1 rounded-pill border border-white border-opacity-25">
+                <i class="bi bi-person-circle me-1"></i><?= htmlspecialchars($default_fullname) ?>
+            </span>
+            <a href="logout.php" class="btn btn-outline-light btn-sm fw-semibold rounded-pill px-3">
+                <i class="bi bi-box-arrow-right me-1"></i> Logout
+            </a>
         </div>
     </div>
 </nav>
 
 <div class="container-fluid px-4 py-4">
-    <div id="alert-box" class="alert d-none shadow-sm"></div>
+    <!-- ALERT BOX -->
+    <div id="alert-box" class="alert d-none shadow-sm rounded-3"></div>
+
+    <!-- HERO STORE BANNERS & SEARCH -->
+    <div class="hero-banner">
+        <div class="row align-items-center">
+            <div class="col-lg-7 mb-3 mb-lg-0">
+                <span class="badge bg-warning text-dark fw-extrabold mb-2 px-3 py-1 rounded-pill text-uppercase shadow-sm" style="letter-spacing: 0.5px;">Central Supply Store</span>
+                <h2 class="mb-2">Mag-order ng Inyong Supplies online!</h2>
+                <p class="mb-0 hero-subtitle">Pumili ng mga kagamitan para sa Office at Maintenance at isumite ang inyong order request.</p>
+            </div>
+            <div class="col-lg-5">
+                <div class="input-group hero-search-box">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Maghanap ng supply name..." onkeyup="filterItems()">
+                    <button class="btn" type="button"><i class="bi bi-search me-1"></i> Search</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <form id="requestForm">
         <input type="hidden" name="request_supply" value="1">
-        
+
         <div class="row g-4">
             <!-- LEFT: PRODUCT CATALOG -->
             <div class="col-lg-8">
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <!-- CATEGORY NAVIGATION PILLS BAR -->
+                <div class="category-bar d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold text-dark small me-2"><i class="bi bi-funnel-fill text-primary me-1"></i>Category:</span>
                         <div class="btn-group" role="group">
                             <input type="radio" class="btn-check" name="request_type" id="cat_office" value="office" checked onchange="switchCategory('office')">
-                            <label class="btn btn-outline-sibtech fw-bold" for="cat_office"><i class="bi bi-box-seam me-1"></i>Office Supplies</label>
+                            <label class="btn category-pill" for="cat_office"><i class="bi bi-box-seam me-1"></i>Office Supplies</label>
 
                             <input type="radio" class="btn-check" name="request_type" id="cat_maint" value="maintenance" onchange="switchCategory('maintenance')">
-                            <label class="btn btn-outline-sibtech fw-bold" for="cat_maint"><i class="bi bi-tools me-1"></i>Maintenance Supplies</label>
-                        </div>
-
-                        <div class="input-group" style="max-width: 300px;">
-                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                            <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Maghanap ng supply..." onkeyup="filterItems()">
+                            <label class="btn category-pill" for="cat_maint"><i class="bi bi-tools me-1"></i>Maintenance Supplies</label>
                         </div>
                     </div>
+                    <span class="badge bg-primary text-white border-0 px-3 py-2 fw-bold" id="available-count-badge"><i class="bi bi-check-circle-fill me-1"></i>Available Items</span>
                 </div>
 
                 <!-- Office Grid -->
                 <div id="office-grid" class="row g-3">
                     <?php if(empty($office_items)): ?>
-                        <div class="col-12 text-center py-5 text-muted">Walang available na Office Supply Items.</div>
+                        <div class="col-12 text-center py-5 bg-white rounded-3 border">
+                            <i class="bi bi-box-seam fs-1 text-muted d-block mb-2"></i>
+                            <h6 class="fw-bold text-dark mb-0">Walang available na Office Supply Items sa kasalukuyan.</h6>
+                        </div>
                     <?php endif; ?>
                     <?php foreach($office_items as $item): ?>
                         <div class="col-sm-6 col-md-4 product-item" data-name="<?= strtolower(htmlspecialchars($item['item_name'])) ?>">
-                            <div class="card h-100 item-card shadow-sm" onclick="addToCart(<?= $item['id'] ?>, '<?= htmlspecialchars(addslashes($item['item_name'])) ?>', '<?= htmlspecialchars($item['unit']) ?>', <?= $item['actual_stocks'] ?>)">
-                                <div class="card-body text-center p-3 d-flex flex-column justify-content-between">
+                            <div class="product-card">
+                                <div class="img-wrapper">
+                                    <span class="product-badge-stock bg-success text-white"><i class="bi bi-box-fill me-1"></i>Stock: <?= $item['actual_stocks'] ?></span>
+                                    <?php if(!empty($item['image']) && file_exists('uploads/' . $item['image'])): ?>
+                                        <img src="uploads/<?= htmlspecialchars($item['image']) ?>" class="product-img" alt="<?= htmlspecialchars($item['item_name']) ?>">
+                                    <?php else: ?>
+                                        <div class="text-secondary text-center py-3">
+                                            <i class="bi bi-box fs-1 d-block opacity-50"></i>
+                                            <span class="small text-muted fw-semibold">No Image Available</span>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="card-body">
                                     <div>
-                                        <?php if(!empty($item['image']) && file_exists('uploads/' . $item['image'])): ?>
-                                            <img src="uploads/<?= htmlspecialchars($item['image']) ?>" class="img-fluid rounded mb-2 product-img" alt="<?= htmlspecialchars($item['item_name']) ?>">
-                                        <?php else: ?>
-                                            <div class="badge-sibtech rounded-circle d-inline-flex p-3 mb-2"><i class="bi bi-box fs-3"></i></div>
-                                        <?php endif; ?>
-                                        <h6 class="card-title fw-bold text-dark text-truncate mb-1"><?= htmlspecialchars($item['item_name']) ?></h6>
-                                        <small class="text-muted d-block mb-2">Unit: <?= htmlspecialchars($item['unit']) ?></small>
+                                        <div class="product-title" title="<?= htmlspecialchars($item['item_name']) ?>"><?= htmlspecialchars($item['item_name']) ?></div>
+                                        <div class="product-unit mb-3">Unit: <span class="badge bg-light text-dark border ms-1 fw-bold"><?= htmlspecialchars($item['unit']) ?></span></div>
                                     </div>
-                                    <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-                                        <span class="badge badge-sibtech">Stock: <?= $item['actual_stocks'] ?></span>
-                                        <button type="button" class="btn btn-sm btn-outline-sibtech"><i class="bi bi-plus-lg"></i> Add</button>
-                                    </div>
+                                    <button type="button" class="btn btn-add-cart py-2" onclick="addToCart(<?= $item['id'] ?>, '<?= htmlspecialchars(addslashes($item['item_name'])) ?>', '<?= htmlspecialchars($item['unit']) ?>', <?= $item['actual_stocks'] ?>)">
+                                        <i class="bi bi-cart-plus-fill me-1"></i> Add to Cart
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -241,25 +265,33 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                 <!-- Maintenance Grid -->
                 <div id="maint-grid" class="row g-3 d-none">
                     <?php if(empty($maint_items)): ?>
-                        <div class="col-12 text-center py-5 text-muted">Walang available na Maintenance Items.</div>
+                        <div class="col-12 text-center py-5 bg-white rounded-3 border">
+                            <i class="bi bi-tools fs-1 text-muted d-block mb-2"></i>
+                            <h6 class="fw-bold text-dark mb-0">Walang available na Maintenance Items sa kasalukuyan.</h6>
+                        </div>
                     <?php endif; ?>
                     <?php foreach($maint_items as $item): ?>
                         <div class="col-sm-6 col-md-4 product-item" data-name="<?= strtolower(htmlspecialchars($item['item_name'])) ?>">
-                            <div class="card h-100 item-card shadow-sm" onclick="addToCart(<?= $item['id'] ?>, '<?= htmlspecialchars(addslashes($item['item_name'])) ?>', '<?= htmlspecialchars($item['unit']) ?>', <?= $item['actual_stocks'] ?>)">
-                                <div class="card-body text-center p-3 d-flex flex-column justify-content-between">
+                            <div class="product-card">
+                                <div class="img-wrapper">
+                                    <span class="product-badge-stock bg-success text-white"><i class="bi bi-box-fill me-1"></i>Stock: <?= $item['actual_stocks'] ?></span>
+                                    <?php if(!empty($item['image']) && file_exists('uploads/' . $item['image'])): ?>
+                                        <img src="uploads/<?= htmlspecialchars($item['image']) ?>" class="product-img" alt="<?= htmlspecialchars($item['item_name']) ?>">
+                                    <?php else: ?>
+                                        <div class="text-secondary text-center py-3">
+                                            <i class="bi bi-wrench fs-1 d-block opacity-50"></i>
+                                            <span class="small text-muted fw-semibold">No Image Available</span>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="card-body">
                                     <div>
-                                        <?php if(!empty($item['image']) && file_exists('uploads/' . $item['image'])): ?>
-                                            <img src="uploads/<?= htmlspecialchars($item['image']) ?>" class="img-fluid rounded mb-2 product-img" alt="<?= htmlspecialchars($item['item_name']) ?>">
-                                        <?php else: ?>
-                                            <div class="badge-sibtech rounded-circle d-inline-flex p-3 mb-2"><i class="bi bi-wrench fs-3"></i></div>
-                                        <?php endif; ?>
-                                        <h6 class="card-title fw-bold text-dark text-truncate mb-1"><?= htmlspecialchars($item['item_name']) ?></h6>
-                                        <small class="text-muted d-block mb-2">Unit: <?= htmlspecialchars($item['unit']) ?></small>
+                                        <div class="product-title" title="<?= htmlspecialchars($item['item_name']) ?>"><?= htmlspecialchars($item['item_name']) ?></div>
+                                        <div class="product-unit mb-3">Unit: <span class="badge bg-light text-dark border ms-1 fw-bold"><?= htmlspecialchars($item['unit']) ?></span></div>
                                     </div>
-                                    <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-                                        <span class="badge badge-sibtech">Stock: <?= $item['actual_stocks'] ?></span>
-                                        <button type="button" class="btn btn-sm btn-outline-sibtech"><i class="bi bi-plus-lg"></i> Add</button>
-                                    </div>
+                                    <button type="button" class="btn btn-add-cart py-2" onclick="addToCart(<?= $item['id'] ?>, '<?= htmlspecialchars(addslashes($item['item_name'])) ?>', '<?= htmlspecialchars($item['unit']) ?>', <?= $item['actual_stocks'] ?>)">
+                                        <i class="bi bi-cart-plus-fill me-1"></i> Add to Cart
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -267,44 +299,26 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                 </div>
             </div>
 
-            <!-- RIGHT: BASKET -->
+            <!-- RIGHT: SHOPPING CART & CHECKOUT -->
             <div class="col-lg-4">
-                <div class="card border-0 shadow-sm cart-sticky">
-                    <div class="card-header bg-sibtech-gradient text-white d-flex justify-content-between align-items-center py-3">
-                        <h5 class="card-title mb-0 fw-bold"><i class="bi bi-basket me-2"></i>Request Basket</h5>
-                        <span class="badge bg-white text-dark rounded-pill fw-bold" id="cart-count">0 items</span>
+                <div class="card cart-card">
+                    <div class="cart-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-cart3 me-2"></i>Shopping Cart</h5>
+                        <span class="badge bg-warning text-dark rounded-pill fw-extrabold fs-6 shadow-sm" id="cart-count">0 items</span>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small text-secondary">Requisitioner Name</label>
-                            <input type="text" name="requisitioner_name" class="form-control form-control-sm" value="<?= htmlspecialchars($default_fullname) ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small text-secondary">Department / Unit</label>
-                            <input type="text" name="department" class="form-control form-control-sm" placeholder="Halimbawa: SPMO, HR, etc." required>
-                        </div>
-                        <div class="row g-2 mb-3">
-                            <div class="col-7">
-                                <label class="form-label fw-bold small text-secondary">Purpose</label>
-                                <input type="text" name="purpose" class="form-control form-control-sm" placeholder="Layunin ng request" required>
-                            </div>
-                            <div class="col-5">
-                                <label class="form-label fw-bold small text-secondary">Date Needed</label>
-                                <input type="date" name="date_needed" class="form-control form-control-sm" required>
-                            </div>
-                        </div>
-
-                        <hr class="my-3 text-muted">
-                        <h6 class="fw-bold mb-2 small text-uppercase text-muted">Selected Items:</h6>
-                        <div id="cart-list" class="cart-items-container mb-3">
+                    <div class="card-body p-4">
+                        <h6 class="fw-bold mb-3 small text-uppercase text-dark d-flex align-items-center justify-content-between">
+                            <span><i class="bi bi-bag-check-fill text-primary me-1"></i>Selected Order Items:</span>
+                        </h6>
+                        <div id="cart-list" class="cart-items-container mb-4" style="max-height: 320px; overflow-y: auto;">
                             <p class="text-center text-muted my-4 small" id="empty-cart-msg">
                                 <i class="bi bi-cart-x fs-2 d-block text-secondary mb-1"></i>
-                                Walang napiling item.
+                                Walang napiling item sa cart.
                             </p>
                         </div>
 
-                        <button type="submit" id="submitBtn" class="btn btn-sibtech w-100 fw-bold py-2 shadow-sm" disabled>
-                            <i class="bi bi-send me-1"></i> Submit Order Request
+                        <button type="button" id="submitBtn" class="btn btn-checkout w-100 shadow-sm py-2" onclick="goToCheckoutPage()" disabled>
+                            <i class="bi bi-arrow-right-circle-fill me-1"></i> Proceed to Place Order Page
                         </button>
                     </div>
                 </div>
@@ -319,7 +333,6 @@ let cart = {};
 let lastNotifId = 0;
 let isInitialized = false;
 
-// Request Permission para sa Browser Push Notification
 function requestNotificationPermission() {
     if ("Notification" in window) {
         if (Notification.permission !== "granted" && Notification.permission !== "denied") {
@@ -328,7 +341,6 @@ function requestNotificationPermission() {
     }
 }
 
-// Live Notification Polling
 function loadNotifications() {
     fetch('user_dashboard.php?action=get_notifications')
     .then(res => res.json())
@@ -336,8 +348,7 @@ function loadNotifications() {
         if (data.status === 'success') {
             const badge = document.getElementById('notification-badge');
             const list = document.getElementById('notification-list');
-            
-            // Unread Count Badge
+
             if (data.unread_count > 0) {
                 badge.textContent = data.unread_count;
                 badge.classList.remove('d-none');
@@ -345,20 +356,16 @@ function loadNotifications() {
                 badge.classList.add('d-none');
             }
 
-            // Mag-check ng BAGO at UNREAD notification para sa APPROVAL Push Notification
             if (data.notifications.length > 0) {
                 const latest = data.notifications[0];
-                
                 if (!isInitialized) {
                     lastNotifId = latest.id;
                     isInitialized = true;
                 } else if (latest.id > lastNotifId && latest.is_read == 0) {
                     const msgLower = latest.message.toLowerCase();
-                    
-                    // Lalabas ang Desktop Push Notification kapag ang message ay patungkol sa APPROVAL
                     if (msgLower.includes('approve') || msgLower.includes('aprubado') || msgLower.includes('na-aprubahan')) {
                         if ("Notification" in window && Notification.permission === "granted") {
-                            new Notification("Request Approved! 🎉", {
+                            new Notification("Order Approved! 🎉", {
                                 body: latest.message,
                                 icon: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
                             });
@@ -368,12 +375,11 @@ function loadNotifications() {
                 }
             }
 
-            // Dropdown Items Render
-            let html = `<li><h6 class="dropdown-header d-flex justify-content-between align-items-center"><span>Mga Abiso</span> <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small" onclick="markAllAsRead()">Mark all as read</button></h6></li>`;
-            html += '<li><hr class="dropdown-divider"></li>';
+            let html = `<li><h6 class="dropdown-header d-flex justify-content-between align-items-center fw-bold"><span>Mga Abiso</span> <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small text-primary fw-bold" onclick="markAllAsRead()">Mark all as read</button></h6></li>`;
+            html += '<li><hr class="dropdown-divider my-1"></li>';
 
             if (data.notifications.length === 0) {
-                html += '<li><span class="dropdown-item text-muted small text-center py-2">Walang abiso.</span></li>';
+                html += '<li><span class="dropdown-item text-muted small text-center py-3">Walang abiso.</span></li>';
             } else {
                 data.notifications.forEach(n => {
                     let bgClass = n.is_read == 0 ? 'bg-light fw-bold' : '';
@@ -397,16 +403,29 @@ function markAllAsRead() {
     });
 }
 
-// Request permission at simulan ang Polling (bawat 4 na segundo)
 document.addEventListener('DOMContentLoaded', () => {
     requestNotificationPermission();
     loadNotifications();
     setInterval(loadNotifications, 4000);
+
+    try {
+        const stored = localStorage.getItem('sibtech_cart');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed && typeof parsed === 'object') {
+                cart = parsed;
+                renderCart();
+            }
+        }
+    } catch(e) {}
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed:', err));
+    }
 });
 
-// --- CART & ITEM MANAGEMENT SCRIPTS ---
 function switchCategory(type) {
-    cart = {}; 
+    cart = {};
     renderCart();
     document.getElementById('searchInput').value = '';
     filterItems();
@@ -430,7 +449,7 @@ function filterItems() {
 function addToCart(id, name, unit, maxStock) {
     if (cart[id]) {
         if (cart[id].qty < maxStock) cart[id].qty++;
-        else showAlert(`Mataas sa available stock (${maxStock}) ang iyong ii-request.`, 'warning');
+        else showAlert(`Mataas sa available stock (${maxStock}) ang iyong ii-order.`, 'warning');
     } else {
         cart[id] = { id, name, unit, qty: 1, maxStock };
     }
@@ -441,15 +460,15 @@ function updateQty(id, change) {
     if (cart[id]) {
         let newQty = cart[id].qty + change;
         if (newQty <= 0) delete cart[id];
-        else if (newQty > cart[id].maxStock) showAlert(`Mataas sa available stock (${cart[id].maxStock}) ang iyong ii-request.`, 'warning');
+        else if (newQty > cart[id].maxStock) showAlert(`Mataas sa available stock (${cart[id].maxStock}) ang iyong ii-order.`, 'warning');
         else cart[id].qty = newQty;
     }
     renderCart();
 }
 
-function removeFromCart(id) { 
-    delete cart[id]; 
-    renderCart(); 
+function removeFromCart(id) {
+    delete cart[id];
+    renderCart();
 }
 
 function renderCart() {
@@ -458,8 +477,10 @@ function renderCart() {
     const keys = Object.keys(cart);
     document.getElementById('cart-count').textContent = `${keys.length} items`;
 
+    localStorage.setItem('sibtech_cart', JSON.stringify(cart));
+
     if (keys.length === 0) {
-        cartList.innerHTML = `<p class="text-center text-muted my-4 small"><i class="bi bi-cart-x fs-2 d-block text-secondary mb-1"></i>Walang napiling item.</p>`;
+        cartList.innerHTML = `<p class="text-center text-muted my-4 small"><i class="bi bi-cart-x fs-2 d-block text-secondary mb-1"></i>Walang napiling item sa cart.</p>`;
         submitBtn.disabled = true;
         return;
     }
@@ -469,28 +490,34 @@ function renderCart() {
     keys.forEach(id => {
         const item = cart[id];
         html += `
-            <div class="card mb-2 shadow-sm border border-light-subtle">
-                <div class="card-body p-2 d-flex align-items-center justify-content-between">
-                    <input type="hidden" name="item_id[]" value="${item.id}">
-                    <div class="me-2 text-truncate" style="max-width: 130px;">
-                        <span class="fw-bold small d-block text-truncate text-dark">${item.name}</span>
-                        <small class="text-muted" style="font-size: 0.75rem;">${item.unit}</small>
-                    </div>
-                    <div class="d-flex align-items-center gap-1">
-                        <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-0" onclick="updateQty(${item.id}, -1)">-</button>
-                        <input type="number" name="quantity[]" value="${item.qty}" class="form-control form-control-sm text-center p-0" style="width: 42px;" readonly>
-                        <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-0" onclick="updateQty(${item.id}, 1)">+</button>
-                        <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-1" onclick="removeFromCart(${item.id})"><i class="bi bi-x-circle-fill"></i></button>
-                    </div>
+            <div class="cart-item d-flex align-items-center justify-content-between">
+                <input type="hidden" name="item_id[]" value="${item.id}">
+                <div class="me-2 text-truncate" style="max-width: 140px;">
+                    <span class="cart-item-title d-block text-truncate" title="${item.name}">${item.name}</span>
+                    <small class="text-muted fw-semibold">${item.unit}</small>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <button type="button" class="btn btn-sm qty-btn" onclick="updateQty(${item.id}, -1)">-</button>
+                    <input type="number" name="quantity[]" value="${item.qty}" class="form-control form-control-sm text-center p-0 fw-bold border" style="width: 38px;" readonly>
+                    <button type="button" class="btn btn-sm qty-btn" onclick="updateQty(${item.id}, 1)">+</button>
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-1" onclick="removeFromCart(${item.id})"><i class="bi bi-trash-fill fs-6"></i></button>
                 </div>
             </div>`;
     });
     cartList.innerHTML = html;
 }
 
+function goToCheckoutPage() {
+    if (Object.keys(cart).length === 0) {
+        alert('Magdagdag muna ng items sa inyong cart bago mag-checkout.');
+        return;
+    }
+    window.location.href = 'place_order.php';
+}
+
 function showAlert(message, type = 'success') {
     const alertBox = document.getElementById('alert-box');
-    alertBox.className = `alert alert-${type} shadow-sm`;
+    alertBox.className = `alert alert-${type} shadow-sm rounded-3 fw-bold`;
     alertBox.textContent = message;
     alertBox.classList.remove('d-none');
     window.scrollTo({ top: 0, behavior: 'smooth' });
