@@ -218,6 +218,8 @@ $maint_pending_count = $maint_requests ? $maint_requests->num_rows : 0;
 
 $office_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM items WHERE actual_stocks <= 0")->fetch_assoc()['cnt'] ?? 0;
 $maint_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_items WHERE actual_stocks <= 0")->fetch_assoc()['cnt'] ?? 0;
+
+$stock_history = $conn->query("SELECT * FROM stock_history ORDER BY updated_at DESC LIMIT 20");
 ?>
 
 <!DOCTYPE html>
@@ -332,6 +334,12 @@ $maint_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_item
                     <span class="badge rounded-pill bg-secondary text-white fw-bold" id="maint-tab-badge"><?= $maint_pending_count ?></span>
                 </button>
             </li>
+            <li class="nav-item">
+                <button class="nav-link d-flex align-items-center justify-content-center gap-2" id="stock-hist-tab" data-bs-toggle="tab" data-bs-target="#stock-hist" type="button">
+                    <span><i class="fa-solid fa-clock-rotate-left me-1"></i> Stock Update History</span>
+                    <span class="badge rounded-pill bg-dark text-white fw-bold"><?= $stock_history ? $stock_history->num_rows : 0 ?></span>
+                </button>
+            </li>
         </ul>
     </div>
 
@@ -424,6 +432,74 @@ $maint_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_item
                             <?php else: ?>
                                 <tr>
                                     <td colspan="6" class="text-center text-muted py-4">Walang nakabinbing Maintenance Supply Orders.</td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Stock Update History -->
+        <div class="tab-pane fade" id="stock-hist">
+            <div class="card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-clock-rotate-left text-logo-blue me-2"></i>Stock Update & Inbound History</h5>
+                    <a href="in_stock.php" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                        <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> View Full History Page
+                    </a>
+                </div>
+                <div class="table-responsive table-container">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Date & Time</th>
+                                <th>Item Name</th>
+                                <th>Category</th>
+                                <th>Previous Stock</th>
+                                <th>New Stock</th>
+                                <th>Change</th>
+                                <th>Updated By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $count = 1;
+                            if ($stock_history && $stock_history->num_rows > 0):
+                                while($row = $stock_history->fetch_assoc()):
+                                    $diff = $row['added_qty'];
+                                    if ($diff > 0) {
+                                        $diff_badge = '<span class="badge bg-success-subtle text-success border border-success-subtle fw-bold">+' . $diff . '</span>';
+                                    } elseif ($diff < 0) {
+                                        $diff_badge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle fw-bold">' . $diff . '</span>';
+                                    } else {
+                                        $diff_badge = '<span class="badge bg-secondary-subtle text-secondary border fw-bold">0</span>';
+                                    }
+
+                                    $cat_badge = ($row['category'] === 'Maintenance')
+                                        ? '<span class="badge bg-warning text-dark border"><i class="fa-solid fa-wrench me-1"></i>Maintenance</span>'
+                                        : '<span class="badge bg-primary text-white"><i class="fa-solid fa-box-open me-1"></i>Office</span>';
+                            ?>
+                                <tr>
+                                    <td class="text-muted small"><?= $count++ ?></td>
+                                    <td class="small text-secondary"><?= date('M d, Y h:i A', strtotime($row['updated_at'])) ?></td>
+                                    <td><strong class="text-dark"><?= htmlspecialchars($row['item_name']) ?></strong></td>
+                                    <td><?= $cat_badge ?></td>
+                                    <td class="fw-semibold text-muted"><?= $row['previous_stock'] ?></td>
+                                    <td class="fw-bold fs-6 text-dark"><?= $row['new_stock'] ?></td>
+                                    <td><?= $diff_badge ?></td>
+                                    <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($row['updated_by']) ?></span></td>
+                                </tr>
+                            <?php
+                                endwhile;
+                            else:
+                            ?>
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">
+                                        <i class="fa-solid fa-folder-open fs-3 d-block mb-2 text-secondary"></i>
+                                        Walang nakatagong kasaysayan ng pag-update ng stock.
+                                    </td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
