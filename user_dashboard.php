@@ -130,7 +130,7 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIBTECH - E-Commerce Supply Portal</title>
+    <title>SIBTECH - Supply Portal Store</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <link rel="stylesheet" href="css/user_dashboard.css">
@@ -138,36 +138,36 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
 <body>
 
 <!-- TOP E-COMMERCE NAVBAR -->
-<nav class="navbar navbar-expand-lg navbar-dark navbar-ecommerce sticky-top shadow-sm">
+<nav class="navbar navbar-expand-lg navbar-dark navbar-ecommerce sticky-top">
     <div class="container-fluid px-4">
         <a class="navbar-brand fw-bold text-white d-flex align-items-center" href="user_dashboard.php">
-            <img src="logo.jpg" alt="SIBTECH Logo" class="navbar-brand-logo rounded-circle border border-2 border-white">
-            <div class="lh-1">
-                <span class="fs-5 d-block">SIBTECH STORE</span>
-                <small class="fw-light opacity-75" style="font-size: 0.72rem;">Central Supply Room Portal</small>
+            <img src="logo.jpg" alt="SIBTECH Logo" class="navbar-brand-logo rounded-circle border border-2 border-white shadow-sm">
+            <div class="lh-1 ms-1">
+                <span class="fs-5 d-block fw-extrabold tracking-tight">SIBTECH STORE</span>
+                <small class="fw-medium text-white-50" style="font-size: 0.75rem;">Central Supply Room Portal</small>
             </div>
         </a>
         <div class="d-flex align-items-center gap-2">
             <!-- NOTIFICATION DROPDOWN -->
-            <div class="dropdown me-2">
-                <button class="btn btn-outline-light btn-sm position-relative dropdown-toggle rounded-pill px-3" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-bell-fill me-1"></i> Abiso
+            <div class="dropdown me-1">
+                <button class="btn btn-light btn-sm fw-bold position-relative dropdown-toggle rounded-pill px-3 text-dark border-0 shadow-sm" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-bell-fill text-primary me-1"></i> Abiso
                     <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="notificationDropdown" style="width: 320px; max-height: 400px; overflow-y: auto;" id="notification-list">
-                    <li><h6 class="dropdown-header">Mga Abiso</h6></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><span class="dropdown-item text-muted small text-center py-2">Kumukuha ng abiso...</span></li>
+                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2" aria-labelledby="notificationDropdown" style="width: 330px; max-height: 400px; overflow-y: auto;" id="notification-list">
+                    <li><h6 class="dropdown-header fw-bold text-dark">Mga Abiso</h6></li>
+                    <li><hr class="dropdown-divider my-1"></li>
+                    <li><span class="dropdown-item text-muted small text-center py-3">Kumukuha ng abiso...</span></li>
                 </ul>
             </div>
 
-            <a href="request_history.php" class="btn btn-outline-light btn-sm rounded-pill px-3 me-2">
+            <a href="request_history.php" class="btn btn-outline-light btn-sm fw-semibold rounded-pill px-3 me-1">
                 <i class="bi bi-bag-check-fill me-1"></i> My Orders
             </a>
-            <span class="text-white me-2 d-none d-md-inline small fw-semibold">
+            <span class="text-white me-2 d-none d-lg-inline small fw-bold bg-white bg-opacity-10 px-3 py-1 rounded-pill border border-white border-opacity-25">
                 <i class="bi bi-person-circle me-1"></i><?= htmlspecialchars($default_fullname) ?>
             </span>
-            <a href="logout.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
+            <a href="logout.php" class="btn btn-outline-light btn-sm fw-semibold rounded-pill px-3">
                 <i class="bi bi-box-arrow-right me-1"></i> Logout
             </a>
         </div>
@@ -182,13 +182,13 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
     <div class="hero-banner">
         <div class="row align-items-center">
             <div class="col-lg-7 mb-3 mb-lg-0">
-                <span class="badge bg-warning text-dark fw-bold mb-2 px-3 py-1 rounded-pill">Central Supply Store</span>
-                <h2 class="mb-1">Mag-order ng Inyong Supplies online!</h2>
-                <p class="mb-0 text-white-50">Pumili ng mga kagamitan para sa Office at Maintenance at isumite ang inyong order request.</p>
+                <span class="badge bg-warning text-dark fw-extrabold mb-2 px-3 py-1 rounded-pill text-uppercase shadow-sm" style="letter-spacing: 0.5px;">Central Supply Store</span>
+                <h2 class="mb-2">Mag-order ng Inyong Supplies online!</h2>
+                <p class="mb-0 hero-subtitle">Pumili ng mga kagamitan para sa Office at Maintenance at isumite ang inyong order request.</p>
             </div>
             <div class="col-lg-5">
                 <div class="input-group hero-search-box">
-                    <input type="text" id="searchInput" class="form-control form-control-lg" placeholder="Maghanap ng supply..." onkeyup="filterItems()">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Maghanap ng supply name..." onkeyup="filterItems()">
                     <button class="btn" type="button"><i class="bi bi-search me-1"></i> Search</button>
                 </div>
             </div>
@@ -201,10 +201,10 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
         <div class="row g-4">
             <!-- LEFT: PRODUCT CATALOG -->
             <div class="col-lg-8">
-                <!-- CATEGORY NAVIGATION PILLS -->
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4 p-3 bg-white rounded-3 shadow-sm">
+                <!-- CATEGORY NAVIGATION PILLS BAR -->
+                <div class="category-bar d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
                     <div class="d-flex align-items-center gap-2">
-                        <span class="fw-bold text-muted small me-2"><i class="bi bi-funnel-fill me-1"></i>Category:</span>
+                        <span class="fw-bold text-dark small me-2"><i class="bi bi-funnel-fill text-primary me-1"></i>Category:</span>
                         <div class="btn-group" role="group">
                             <input type="radio" class="btn-check" name="request_type" id="cat_office" value="office" checked onchange="switchCategory('office')">
                             <label class="btn category-pill" for="cat_office"><i class="bi bi-box-seam me-1"></i>Office Supplies</label>
@@ -213,38 +213,38 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                             <label class="btn category-pill" for="cat_maint"><i class="bi bi-tools me-1"></i>Maintenance Supplies</label>
                         </div>
                     </div>
-                    <span class="badge bg-light text-dark border px-3 py-2" id="available-count-badge">Available Items</span>
+                    <span class="badge bg-primary text-white border-0 px-3 py-2 fw-bold" id="available-count-badge"><i class="bi bi-check-circle-fill me-1"></i>Available Items</span>
                 </div>
 
                 <!-- Office Grid -->
                 <div id="office-grid" class="row g-3">
                     <?php if(empty($office_items)): ?>
-                        <div class="col-12 text-center py-5 text-muted">
-                            <i class="bi bi-box-seam fs-1 text-secondary d-block mb-2"></i>
-                            Walang available na Office Supply Items sa kasalukuyan.
+                        <div class="col-12 text-center py-5 bg-white rounded-3 border">
+                            <i class="bi bi-box-seam fs-1 text-muted d-block mb-2"></i>
+                            <h6 class="fw-bold text-dark mb-0">Walang available na Office Supply Items sa kasalukuyan.</h6>
                         </div>
                     <?php endif; ?>
                     <?php foreach($office_items as $item): ?>
                         <div class="col-sm-6 col-md-4 product-item" data-name="<?= strtolower(htmlspecialchars($item['item_name'])) ?>">
                             <div class="product-card">
                                 <div class="img-wrapper">
-                                    <span class="product-badge-stock bg-success text-white">Stock: <?= $item['actual_stocks'] ?></span>
+                                    <span class="product-badge-stock bg-success text-white"><i class="bi bi-box-fill me-1"></i>Stock: <?= $item['actual_stocks'] ?></span>
                                     <?php if(!empty($item['image']) && file_exists('uploads/' . $item['image'])): ?>
                                         <img src="uploads/<?= htmlspecialchars($item['image']) ?>" class="product-img" alt="<?= htmlspecialchars($item['item_name']) ?>">
                                     <?php else: ?>
-                                        <div class="text-secondary text-center">
+                                        <div class="text-secondary text-center py-3">
                                             <i class="bi bi-box fs-1 d-block opacity-50"></i>
-                                            <small class="small text-muted">No Image</small>
+                                            <span class="small text-muted fw-semibold">No Image Available</span>
                                         </div>
                                     <?php endif; ?>
                                 </div>
                                 <div class="card-body">
                                     <div>
-                                        <div class="product-title"><?= htmlspecialchars($item['item_name']) ?></div>
-                                        <div class="product-unit mb-3">Unit: <span class="badge bg-light text-dark border"><?= htmlspecialchars($item['unit']) ?></span></div>
+                                        <div class="product-title" title="<?= htmlspecialchars($item['item_name']) ?>"><?= htmlspecialchars($item['item_name']) ?></div>
+                                        <div class="product-unit mb-3">Unit: <span class="badge bg-light text-dark border ms-1 fw-bold"><?= htmlspecialchars($item['unit']) ?></span></div>
                                     </div>
                                     <button type="button" class="btn btn-add-cart py-2" onclick="addToCart(<?= $item['id'] ?>, '<?= htmlspecialchars(addslashes($item['item_name'])) ?>', '<?= htmlspecialchars($item['unit']) ?>', <?= $item['actual_stocks'] ?>)">
-                                        <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                        <i class="bi bi-cart-plus-fill me-1"></i> Add to Cart
                                     </button>
                                 </div>
                             </div>
@@ -255,32 +255,32 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                 <!-- Maintenance Grid -->
                 <div id="maint-grid" class="row g-3 d-none">
                     <?php if(empty($maint_items)): ?>
-                        <div class="col-12 text-center py-5 text-muted">
-                            <i class="bi bi-tools fs-1 text-secondary d-block mb-2"></i>
-                            Walang available na Maintenance Items sa kasalukuyan.
+                        <div class="col-12 text-center py-5 bg-white rounded-3 border">
+                            <i class="bi bi-tools fs-1 text-muted d-block mb-2"></i>
+                            <h6 class="fw-bold text-dark mb-0">Walang available na Maintenance Items sa kasalukuyan.</h6>
                         </div>
                     <?php endif; ?>
                     <?php foreach($maint_items as $item): ?>
                         <div class="col-sm-6 col-md-4 product-item" data-name="<?= strtolower(htmlspecialchars($item['item_name'])) ?>">
                             <div class="product-card">
                                 <div class="img-wrapper">
-                                    <span class="product-badge-stock bg-success text-white">Stock: <?= $item['actual_stocks'] ?></span>
+                                    <span class="product-badge-stock bg-success text-white"><i class="bi bi-box-fill me-1"></i>Stock: <?= $item['actual_stocks'] ?></span>
                                     <?php if(!empty($item['image']) && file_exists('uploads/' . $item['image'])): ?>
                                         <img src="uploads/<?= htmlspecialchars($item['image']) ?>" class="product-img" alt="<?= htmlspecialchars($item['item_name']) ?>">
                                     <?php else: ?>
-                                        <div class="text-secondary text-center">
+                                        <div class="text-secondary text-center py-3">
                                             <i class="bi bi-wrench fs-1 d-block opacity-50"></i>
-                                            <small class="small text-muted">No Image</small>
+                                            <span class="small text-muted fw-semibold">No Image Available</span>
                                         </div>
                                     <?php endif; ?>
                                 </div>
                                 <div class="card-body">
                                     <div>
-                                        <div class="product-title"><?= htmlspecialchars($item['item_name']) ?></div>
-                                        <div class="product-unit mb-3">Unit: <span class="badge bg-light text-dark border"><?= htmlspecialchars($item['unit']) ?></span></div>
+                                        <div class="product-title" title="<?= htmlspecialchars($item['item_name']) ?>"><?= htmlspecialchars($item['item_name']) ?></div>
+                                        <div class="product-unit mb-3">Unit: <span class="badge bg-light text-dark border ms-1 fw-bold"><?= htmlspecialchars($item['unit']) ?></span></div>
                                     </div>
                                     <button type="button" class="btn btn-add-cart py-2" onclick="addToCart(<?= $item['id'] ?>, '<?= htmlspecialchars(addslashes($item['item_name'])) ?>', '<?= htmlspecialchars($item['unit']) ?>', <?= $item['actual_stocks'] ?>)">
-                                        <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                        <i class="bi bi-cart-plus-fill me-1"></i> Add to Cart
                                     </button>
                                 </div>
                             </div>
@@ -294,31 +294,33 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                 <div class="card cart-card">
                     <div class="cart-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 fw-bold"><i class="bi bi-cart3 me-2"></i>Shopping Cart</h5>
-                        <span class="badge bg-warning text-dark rounded-pill fw-bold fs-6" id="cart-count">0 items</span>
+                        <span class="badge bg-warning text-dark rounded-pill fw-extrabold fs-6 shadow-sm" id="cart-count">0 items</span>
                     </div>
                     <div class="card-body p-4">
                         <div class="mb-3">
-                            <label class="form-label fw-bold small text-secondary">Requisitioner Name</label>
-                            <input type="text" name="requisitioner_name" class="form-control form-control-sm" value="<?= htmlspecialchars($default_fullname) ?>" required>
+                            <label class="form-label-custom">Requisitioner Name</label>
+                            <input type="text" name="requisitioner_name" class="form-control form-control-sm fw-semibold border-secondary-subtle" value="<?= htmlspecialchars($default_fullname) ?>" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-bold small text-secondary">Department / Unit</label>
-                            <input type="text" name="department" class="form-control form-control-sm" placeholder="Halimbawa: SPMO, HR, IT" required>
+                            <label class="form-label-custom">Department / Unit</label>
+                            <input type="text" name="department" class="form-control form-control-sm fw-semibold border-secondary-subtle" placeholder="Halimbawa: SPMO, HR, IT" required>
                         </div>
                         <div class="row g-2 mb-3">
                             <div class="col-7">
-                                <label class="form-label fw-bold small text-secondary">Purpose</label>
-                                <input type="text" name="purpose" class="form-control form-control-sm" placeholder="Layunin ng order" required>
+                                <label class="form-label-custom">Purpose</label>
+                                <input type="text" name="purpose" class="form-control form-control-sm fw-semibold border-secondary-subtle" placeholder="Layunin ng order" required>
                             </div>
                             <div class="col-5">
-                                <label class="form-label fw-bold small text-secondary">Date Needed</label>
-                                <input type="date" name="date_needed" class="form-control form-control-sm" required>
+                                <label class="form-label-custom">Date Needed</label>
+                                <input type="date" name="date_needed" class="form-control form-control-sm fw-semibold border-secondary-subtle" required>
                             </div>
                         </div>
 
-                        <hr class="my-3 text-muted">
-                        <h6 class="fw-bold mb-2 small text-uppercase text-muted"><i class="bi bi-bag-check me-1"></i>Selected Order Items:</h6>
-                        <div id="cart-list" class="cart-items-container mb-3">
+                        <hr class="my-3 text-secondary opacity-25">
+                        <h6 class="fw-bold mb-3 small text-uppercase text-dark d-flex align-items-center justify-content-between">
+                            <span><i class="bi bi-bag-check-fill text-primary me-1"></i>Selected Order Items:</span>
+                        </h6>
+                        <div id="cart-list" class="cart-items-container mb-3" style="max-height: 280px; overflow-y: auto;">
                             <p class="text-center text-muted my-4 small" id="empty-cart-msg">
                                 <i class="bi bi-cart-x fs-2 d-block text-secondary mb-1"></i>
                                 Walang napiling item sa cart.
@@ -383,11 +385,11 @@ function loadNotifications() {
                 }
             }
 
-            let html = `<li><h6 class="dropdown-header d-flex justify-content-between align-items-center"><span>Mga Abiso</span> <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small" onclick="markAllAsRead()">Mark all as read</button></h6></li>`;
-            html += '<li><hr class="dropdown-divider"></li>';
+            let html = `<li><h6 class="dropdown-header d-flex justify-content-between align-items-center fw-bold"><span>Mga Abiso</span> <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small text-primary fw-bold" onclick="markAllAsRead()">Mark all as read</button></h6></li>`;
+            html += '<li><hr class="dropdown-divider my-1"></li>';
 
             if (data.notifications.length === 0) {
-                html += '<li><span class="dropdown-item text-muted small text-center py-2">Walang abiso.</span></li>';
+                html += '<li><span class="dropdown-item text-muted small text-center py-3">Walang abiso.</span></li>';
             } else {
                 data.notifications.forEach(n => {
                     let bgClass = n.is_read == 0 ? 'bg-light fw-bold' : '';
@@ -484,14 +486,14 @@ function renderCart() {
             <div class="cart-item d-flex align-items-center justify-content-between">
                 <input type="hidden" name="item_id[]" value="${item.id}">
                 <div class="me-2 text-truncate" style="max-width: 140px;">
-                    <span class="cart-item-title d-block text-truncate">${item.name}</span>
-                    <small class="text-muted">${item.unit}</small>
+                    <span class="cart-item-title d-block text-truncate" title="${item.name}">${item.name}</span>
+                    <small class="text-muted fw-semibold">${item.unit}</small>
                 </div>
                 <div class="d-flex align-items-center gap-1">
-                    <button type="button" class="btn btn-sm btn-outline-secondary qty-btn" onclick="updateQty(${item.id}, -1)">-</button>
-                    <input type="number" name="quantity[]" value="${item.qty}" class="form-control form-control-sm text-center p-0" style="width: 38px; font-weight: bold;" readonly>
-                    <button type="button" class="btn btn-sm btn-outline-secondary qty-btn" onclick="updateQty(${item.id}, 1)">+</button>
-                    <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-1" onclick="removeFromCart(${item.id})"><i class="bi bi-trash-fill"></i></button>
+                    <button type="button" class="btn btn-sm qty-btn" onclick="updateQty(${item.id}, -1)">-</button>
+                    <input type="number" name="quantity[]" value="${item.qty}" class="form-control form-control-sm text-center p-0 fw-bold border" style="width: 38px;" readonly>
+                    <button type="button" class="btn btn-sm qty-btn" onclick="updateQty(${item.id}, 1)">+</button>
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-1" onclick="removeFromCart(${item.id})"><i class="bi bi-trash-fill fs-6"></i></button>
                 </div>
             </div>`;
     });
@@ -500,7 +502,7 @@ function renderCart() {
 
 function showAlert(message, type = 'success') {
     const alertBox = document.getElementById('alert-box');
-    alertBox.className = `alert alert-${type} shadow-sm rounded-3`;
+    alertBox.className = `alert alert-${type} shadow-sm rounded-3 fw-bold`;
     alertBox.textContent = message;
     alertBox.classList.remove('d-none');
     window.scrollTo({ top: 0, behavior: 'smooth' });
