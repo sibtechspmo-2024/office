@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_supply'])) {
         $item_table = ($request_type === 'maintenance') ? 'maintenance_items' : 'items';
 
         $stmt = $conn->prepare("INSERT INTO {$request_table} (request_group_id, user_id, requisitioner_name, department, item_id, quantity, purpose, date_needed) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $update_stock_stmt = $conn->prepare("UPDATE {$item_table} SET actual_stocks = actual_stocks - ? WHERE id = ? AND actual_stocks >= ?");
+        $check_stock_stmt = $conn->prepare("SELECT actual_stocks, item_name FROM {$item_table} WHERE id = ?");
 
         $inserted_count = 0;
         $conn->begin_transaction();
@@ -78,15 +78,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_supply'])) {
                 $qty = intval($quantities[$index] ?? 0);
 
                 if ($item_id > 0 && $qty > 0) {
+                    $check_stock_stmt->bind_param("i", $item_id);
+                    $check_stock_stmt->execute();
+                    $chk_res = $check_stock_stmt->get_result()->fetch_assoc();
+
+                    if (!$chk_res || $chk_res['actual_stocks'] < $qty) {
+                        $iname = $chk_res['item_name'] ?? 'Selected Item';
+                        throw new Exception("Kulang ang available stock para sa item na: " . $iname);
+                    }
+
                     $stmt->bind_param("sississs", $request_group_id, $user_id, $requisitioner_name, $department, $item_id, $qty, $purpose, $date_needed);
                     $stmt->execute();
-
-                    $update_stock_stmt->bind_param("iii", $qty, $item_id, $qty);
-                    $update_stock_stmt->execute();
-
-                    if ($update_stock_stmt->affected_rows === 0) {
-                        throw new Exception("Kulang ang available stock para sa napiling item.");
-                    }
                     $inserted_count++;
                 }
             }
@@ -166,6 +168,9 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                 </ul>
             </div>
 
+            <a href="place_order.php" class="btn btn-warning btn-sm fw-bold rounded-pill px-3 me-1 text-dark">
+                <i class="bi bi-cart-plus-fill me-1"></i> Place Order
+            </a>
             <a href="request_history.php" class="btn btn-outline-light btn-sm fw-semibold rounded-pill px-3 me-1">
                 <i class="bi bi-bag-check-fill me-1"></i> My Orders
             </a>
@@ -332,8 +337,8 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
                             </p>
                         </div>
 
-                        <button type="submit" id="submitBtn" class="btn btn-checkout w-100 shadow-sm" disabled>
-                            <i class="bi bi-send-fill me-1"></i> Place Order Request
+                        <button type="button" id="submitBtn" class="btn btn-checkout w-100 shadow-sm" onclick="goToCheckoutPage()" disabled>
+                            <i class="bi bi-arrow-right-circle-fill me-1"></i> Proceed to Place Order Page
                         </button>
                     </div>
                 </div>
@@ -423,6 +428,17 @@ document.addEventListener('DOMContentLoaded', () => {
     loadNotifications();
     setInterval(loadNotifications, 4000);
 
+    try {
+        const stored = localStorage.getItem('sibtech_cart');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed && typeof parsed === 'object') {
+                cart = parsed;
+                renderCart();
+            }
+        }
+    } catch(e) {}
+
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed:', err));
     }
@@ -481,6 +497,8 @@ function renderCart() {
     const keys = Object.keys(cart);
     document.getElementById('cart-count').textContent = `${keys.length} items`;
 
+    localStorage.setItem('sibtech_cart', JSON.stringify(cart));
+
     if (keys.length === 0) {
         cartList.innerHTML = `<p class="text-center text-muted my-4 small"><i class="bi bi-cart-x fs-2 d-block text-secondary mb-1"></i>Walang napiling item sa cart.</p>`;
         submitBtn.disabled = true;
@@ -507,6 +525,14 @@ function renderCart() {
             </div>`;
     });
     cartList.innerHTML = html;
+}
+
+function goToCheckoutPage() {
+    if (Object.keys(cart).length === 0) {
+        alert('Magdagdag muna ng items sa inyong cart bago mag-checkout.');
+        return;
+    }
+    window.location.href = 'place_order.php';
 }
 
 function showAlert(message, type = 'success') {
