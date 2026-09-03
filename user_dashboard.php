@@ -134,6 +134,11 @@ $maint_items = $conn->query("SELECT * FROM maintenance_items WHERE actual_stocks
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <link rel="stylesheet" href="css/user_dashboard.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1b4f9c">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
 
@@ -417,6 +422,10 @@ document.addEventListener('DOMContentLoaded', () => {
     requestNotificationPermission();
     loadNotifications();
     setInterval(loadNotifications, 4000);
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed:', err));
+    }
 });
 
 function switchCategory(type) {
