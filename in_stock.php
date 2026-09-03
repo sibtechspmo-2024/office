@@ -7,8 +7,45 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role'] ?? '') !== 'adm
     exit;
 }
 
-// Kuhanin ang kasaysayan ng pag-update ng stock
-$stock_history = $conn->query("SELECT * FROM stock_history ORDER BY updated_at DESC");
+// Kuhanin ang filter parameters
+$category_filter = $_GET['category'] ?? 'all';
+$time_filter = $_GET['time_filter'] ?? 'all';
+$date_from = $_GET['date_from'] ?? '';
+$date_to = $_GET['date_to'] ?? '';
+
+$sql = "SELECT * FROM stock_history WHERE 1=1";
+$params = [];
+$types = "";
+
+if ($category_filter === 'office') {
+    $sql .= " AND LOWER(category) = 'office'";
+} elseif ($category_filter === 'maintenance') {
+    $sql .= " AND LOWER(category) = 'maintenance'";
+}
+
+if ($time_filter === 'today') {
+    $sql .= " AND DATE(updated_at) = CURDATE()";
+} elseif ($time_filter === '7days') {
+    $sql .= " AND updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+} elseif ($time_filter === 'month') {
+    $sql .= " AND MONTH(updated_at) = MONTH(CURRENT_DATE()) AND YEAR(updated_at) = YEAR(CURRENT_DATE())";
+} elseif ($time_filter === 'custom' && !empty($date_from) && !empty($date_to)) {
+    $sql .= " AND DATE(updated_at) BETWEEN ? AND ?";
+    $params[] = $date_from;
+    $params[] = $date_to;
+    $types .= "ss";
+}
+
+$sql .= " ORDER BY updated_at DESC";
+
+if (!empty($params)) {
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $stock_history = $stmt->get_result();
+} else {
+    $stock_history = $conn->query($sql);
+}
 ?>
 
 <!DOCTYPE html>
@@ -52,6 +89,40 @@ $stock_history = $conn->query("SELECT * FROM stock_history ORDER BY updated_at D
             <span class="badge bg-light text-dark fw-bold"><?= $stock_history ? $stock_history->num_rows : 0 ?> History Logs</span>
         </div>
         <div class="card-body p-4">
+            <!-- FILTER BAR -->
+            <form method="GET" class="row g-3 mb-4 bg-light p-3 rounded-3 border align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold small text-secondary"><i class="fa-solid fa-filter me-1"></i>Supply Category</label>
+                    <select name="category" class="form-select form-select-sm fw-semibold" onchange="this.form.submit()">
+                        <option value="all" <?= $category_filter === 'all' ? 'selected' : '' ?>>All Categories (Office & Maint)</option>
+                        <option value="office" <?= $category_filter === 'office' ? 'selected' : '' ?>>Office Supplies Only</option>
+                        <option value="maintenance" <?= $category_filter === 'maintenance' ? 'selected' : '' ?>>Maintenance Supplies Only</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold small text-secondary"><i class="fa-solid fa-clock me-1"></i>Time Update Filter</label>
+                    <select name="time_filter" id="time_filter" class="form-select form-select-sm fw-semibold" onchange="toggleCustomDates(); this.form.submit();">
+                        <option value="all" <?= $time_filter === 'all' ? 'selected' : '' ?>>All Time</option>
+                        <option value="today" <?= $time_filter === 'today' ? 'selected' : '' ?>>Today</option>
+                        <option value="7days" <?= $time_filter === '7days' ? 'selected' : '' ?>>Past 7 Days</option>
+                        <option value="month" <?= $time_filter === 'month' ? 'selected' : '' ?>>This Month</option>
+                        <option value="custom" <?= $time_filter === 'custom' ? 'selected' : '' ?>>Custom Date Range</option>
+                    </select>
+                </div>
+                <div class="col-md-2 date-range-box <?= $time_filter === 'custom' ? '' : 'd-none' ?>">
+                    <label class="form-label fw-bold small text-secondary">Date From</label>
+                    <input type="date" name="date_from" class="form-control form-control-sm fw-semibold" value="<?= htmlspecialchars($date_from) ?>">
+                </div>
+                <div class="col-md-2 date-range-box <?= $time_filter === 'custom' ? '' : 'd-none' ?>">
+                    <label class="form-label fw-bold small text-secondary">Date To</label>
+                    <input type="date" name="date_to" class="form-control form-control-sm fw-semibold" value="<?= htmlspecialchars($date_to) ?>">
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold w-100">Filter</button>
+                    <a href="in_stock.php" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-bold">Reset</a>
+                </div>
+            </form>
+
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
@@ -113,5 +184,17 @@ $stock_history = $conn->query("SELECT * FROM stock_history ORDER BY updated_at D
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleCustomDates() {
+    const val = document.getElementById('time_filter').value;
+    document.querySelectorAll('.date-range-box').forEach(box => {
+        if (val === 'custom') {
+            box.classList.remove('d-none');
+        } else {
+            box.classList.add('d-none');
+        }
+    });
+}
+</script>
 </body>
 </html>

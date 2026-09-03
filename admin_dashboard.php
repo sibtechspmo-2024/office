@@ -219,7 +219,27 @@ $maint_pending_count = $maint_requests ? $maint_requests->num_rows : 0;
 $office_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM items WHERE actual_stocks <= 0")->fetch_assoc()['cnt'] ?? 0;
 $maint_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_items WHERE actual_stocks <= 0")->fetch_assoc()['cnt'] ?? 0;
 
-$stock_history = $conn->query("SELECT * FROM stock_history ORDER BY updated_at DESC LIMIT 20");
+// Stock history query with filter options
+$stock_cat = $_GET['stock_cat'] ?? 'all';
+$stock_time = $_GET['stock_time'] ?? 'all';
+
+$sh_sql = "SELECT * FROM stock_history WHERE 1=1";
+if ($stock_cat === 'office') {
+    $sh_sql .= " AND LOWER(category) = 'office'";
+} elseif ($stock_cat === 'maintenance') {
+    $sh_sql .= " AND LOWER(category) = 'maintenance'";
+}
+
+if ($stock_time === 'today') {
+    $sh_sql .= " AND DATE(updated_at) = CURDATE()";
+} elseif ($stock_time === '7days') {
+    $sh_sql .= " AND updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+} elseif ($stock_time === 'month') {
+    $sh_sql .= " AND MONTH(updated_at) = MONTH(CURRENT_DATE()) AND YEAR(updated_at) = YEAR(CURRENT_DATE())";
+}
+
+$sh_sql .= " ORDER BY updated_at DESC LIMIT 20";
+$stock_history = $conn->query($sh_sql);
 ?>
 
 <!DOCTYPE html>
@@ -319,11 +339,14 @@ $stock_history = $conn->query("SELECT * FROM stock_history ORDER BY updated_at D
         </div>
     </div>
 
+<?php
+$is_hist_active = isset($_GET['stock_cat']) || isset($_GET['stock_time']);
+?>
     <!-- TABS NAVIGATION -->
     <div class="card mb-4 p-2">
         <ul class="nav nav-pills nav-fill" id="adminTabs" role="tablist">
             <li class="nav-item">
-                <button class="nav-link active d-flex align-items-center justify-content-center gap-2" id="office-req-tab" data-bs-toggle="tab" data-bs-target="#office-req" type="button">
+                <button class="nav-link <?= !$is_hist_active ? 'active' : '' ?> d-flex align-items-center justify-content-center gap-2" id="office-req-tab" data-bs-toggle="tab" data-bs-target="#office-req" type="button">
                     <span><i class="fa-solid fa-cart-shopping me-1"></i> Office Orders</span>
                     <span class="badge rounded-pill bg-light text-dark fw-bold" id="office-tab-badge"><?= $office_pending_count ?></span>
                 </button>
@@ -335,7 +358,7 @@ $stock_history = $conn->query("SELECT * FROM stock_history ORDER BY updated_at D
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link d-flex align-items-center justify-content-center gap-2" id="stock-hist-tab" data-bs-toggle="tab" data-bs-target="#stock-hist" type="button">
+                <button class="nav-link <?= $is_hist_active ? 'active' : '' ?> d-flex align-items-center justify-content-center gap-2" id="stock-hist-tab" data-bs-toggle="tab" data-bs-target="#stock-hist" type="button">
                     <span><i class="fa-solid fa-clock-rotate-left me-1"></i> Stock Update History</span>
                     <span class="badge rounded-pill bg-dark text-white fw-bold"><?= $stock_history ? $stock_history->num_rows : 0 ?></span>
                 </button>
@@ -345,7 +368,7 @@ $stock_history = $conn->query("SELECT * FROM stock_history ORDER BY updated_at D
 
     <div class="tab-content" id="adminTabsContent">
         <!-- Tab 1: Office Requests -->
-        <div class="tab-pane fade show active" id="office-req">
+        <div class="tab-pane fade <?= !$is_hist_active ? 'show active' : '' ?>" id="office-req">
             <div class="card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-box-open text-logo-blue me-2"></i>Pending Office Supply Orders</h5>
@@ -441,13 +464,28 @@ $stock_history = $conn->query("SELECT * FROM stock_history ORDER BY updated_at D
         </div>
 
         <!-- Tab 3: Stock Update History -->
-        <div class="tab-pane fade" id="stock-hist">
+        <div class="tab-pane fade <?= $is_hist_active ? 'show active' : '' ?>" id="stock-hist">
             <div class="card p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                     <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-clock-rotate-left text-logo-blue me-2"></i>Stock Update & Inbound History</h5>
-                    <a href="in_stock.php" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                        <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> View Full History Page
-                    </a>
+                    <div class="d-flex gap-2 align-items-center">
+                        <form method="GET" class="d-flex gap-2">
+                            <select name="stock_cat" class="form-select form-select-sm fw-semibold" onchange="this.form.submit()">
+                                <option value="all" <?= $stock_cat === 'all' ? 'selected' : '' ?>>All Categories</option>
+                                <option value="office" <?= $stock_cat === 'office' ? 'selected' : '' ?>>Office Supplies</option>
+                                <option value="maintenance" <?= $stock_cat === 'maintenance' ? 'selected' : '' ?>>Maintenance Supplies</option>
+                            </select>
+                            <select name="stock_time" class="form-select form-select-sm fw-semibold" onchange="this.form.submit()">
+                                <option value="all" <?= $stock_time === 'all' ? 'selected' : '' ?>>All Time</option>
+                                <option value="today" <?= $stock_time === 'today' ? 'selected' : '' ?>>Today</option>
+                                <option value="7days" <?= $stock_time === '7days' ? 'selected' : '' ?>>Past 7 Days</option>
+                                <option value="month" <?= $stock_time === 'month' ? 'selected' : '' ?>>This Month</option>
+                            </select>
+                        </form>
+                        <a href="in_stock.php" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold text-nowrap">
+                            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> View Full History
+                        </a>
+                    </div>
                 </div>
                 <div class="table-responsive table-container">
                     <table class="table table-hover align-middle mb-0">
