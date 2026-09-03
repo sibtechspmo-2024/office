@@ -291,13 +291,15 @@ $maint_out_of_stock = $conn->query("SELECT COUNT(*) as cnt FROM maintenance_item
     <div class="card mb-4 p-2">
         <ul class="nav nav-pills nav-fill" id="adminTabs" role="tablist">
             <li class="nav-item">
-                <button class="nav-link active" id="office-req-tab" data-bs-toggle="tab" data-bs-target="#office-req" type="button">
-                    <i class="fa-solid fa-cart-shopping me-1"></i> Office Orders
+                <button class="nav-link active d-flex align-items-center justify-content-center gap-2" id="office-req-tab" data-bs-toggle="tab" data-bs-target="#office-req" type="button">
+                    <span><i class="fa-solid fa-cart-shopping me-1"></i> Office Orders</span>
+                    <span class="badge rounded-pill bg-light text-dark fw-bold" id="office-tab-badge"><?= $office_pending_count ?></span>
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="maint-req-tab" data-bs-toggle="tab" data-bs-target="#maint-req" type="button">
-                    <i class="fa-solid fa-wrench me-1"></i> Maintenance Orders
+                <button class="nav-link d-flex align-items-center justify-content-center gap-2" id="maint-req-tab" data-bs-toggle="tab" data-bs-target="#maint-req" type="button">
+                    <span><i class="fa-solid fa-wrench me-1"></i> Maintenance Orders</span>
+                    <span class="badge rounded-pill bg-secondary text-white fw-bold" id="maint-tab-badge"><?= $maint_pending_count ?></span>
                 </button>
             </li>
         </ul>
@@ -524,6 +526,8 @@ function pollRequests() {
             let currentCount = tempDiv.find('tr').length;
             if (tempDiv.find('td[colspan]').length > 0) currentCount = 0;
 
+            $('#office-tab-badge').text(currentCount);
+
             if (lastOfficeCount !== null && currentCount > lastOfficeCount) {
                 triggerDesktopNotification("Bagong Office Order!", "May pumasok na bagong order para sa Office Supplies.");
             }
@@ -540,6 +544,8 @@ function pollRequests() {
             let tempDiv = $('<div>').html(data);
             let currentCount = tempDiv.find('tr').length;
             if (tempDiv.find('td[colspan]').length > 0) currentCount = 0;
+
+            $('#maint-tab-badge').text(currentCount);
 
             if (lastMaintCount !== null && currentCount > lastMaintCount) {
                 triggerDesktopNotification("Bagong Maintenance Order!", "May pumasok na bagong order para sa Maintenance.");
