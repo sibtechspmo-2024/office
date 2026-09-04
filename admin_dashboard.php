@@ -240,6 +240,51 @@ if ($stock_time === 'today') {
 
 $sh_sql .= " ORDER BY updated_at DESC LIMIT 20";
 $stock_history = $conn->query($sh_sql);
+
+// Query for Order Request History (Office & Maintenance)
+$req_hist_status = $_GET['req_status'] ?? 'all';
+$req_hist_cat = $_GET['req_cat'] ?? 'all';
+
+$all_history_requests = [];
+
+if ($req_hist_cat === 'all' || $req_hist_cat === 'office') {
+    $off_sql = "
+        SELECT 'office' as type, request_group_id, requisitioner_name, department, purpose, status,
+               COUNT(*) as total_items, MAX(created_at) as created_at, MAX(approved_at) as approved_at
+        FROM supply_requests
+        WHERE 1=1
+    ";
+    if ($req_hist_status !== 'all') {
+        $off_sql .= " AND status = '" . $conn->real_escape_string($req_hist_status) . "'";
+    }
+    $off_sql .= " GROUP BY request_group_id, requisitioner_name, department, purpose, status";
+    $off_res = $conn->query($off_sql);
+    if ($off_res) {
+        while ($r = $off_res->fetch_assoc()) $all_history_requests[] = $r;
+    }
+}
+
+if ($req_hist_cat === 'all' || $req_hist_cat === 'maintenance') {
+    $mnt_sql = "
+        SELECT 'maintenance' as type, request_group_id, requisitioner_name, department, purpose, status,
+               COUNT(*) as total_items, MAX(created_at) as created_at, MAX(approved_at) as approved_at
+        FROM maintenance_requests
+        WHERE 1=1
+    ";
+    if ($req_hist_status !== 'all') {
+        $mnt_sql .= " AND status = '" . $conn->real_escape_string($req_hist_status) . "'";
+    }
+    $mnt_sql .= " GROUP BY request_group_id, requisitioner_name, department, purpose, status";
+    $mnt_res = $conn->query($mnt_sql);
+    if ($mnt_res) {
+        while ($r = $mnt_res->fetch_assoc()) $all_history_requests[] = $r;
+    }
+}
+
+// Sort history requests by created_at DESC
+usort($all_history_requests, function($a, $b) {
+    return strtotime($b['created_at']) - strtotime($a['created_at']);
+});
 ?>
 
 <!DOCTYPE html>
@@ -275,6 +320,9 @@ $stock_history = $conn->query($sh_sql);
             </a>
             <a href="admin_maintenance.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
                 <i class="fa-solid fa-wrench me-1"></i> Maintenance Page
+            </a>
+            <a href="in_stock.php" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i> Stock Update History
             </a>
             <a href="export_out_of_stock.php?type=all" class="btn btn-logo-accent btn-sm rounded-pill px-3">
                 <i class="fa-solid fa-file-excel me-1"></i> Export Out of Stock (Excel)
@@ -337,13 +385,14 @@ $stock_history = $conn->query($sh_sql);
     </div>
 
 <?php
-$is_hist_active = isset($_GET['stock_cat']) || isset($_GET['stock_time']);
+$is_stock_hist = isset($_GET['stock_cat']) || isset($_GET['stock_time']);
+$is_req_hist = isset($_GET['req_status']) || isset($_GET['req_cat']);
 ?>
     <!-- TABS NAVIGATION -->
     <div class="card mb-4 p-2">
         <ul class="nav nav-pills nav-fill" id="adminTabs" role="tablist">
             <li class="nav-item">
-                <button class="nav-link <?= !$is_hist_active ? 'active' : '' ?> d-flex align-items-center justify-content-center gap-2" id="office-req-tab" data-bs-toggle="tab" data-bs-target="#office-req" type="button">
+                <button class="nav-link <?= (!$is_stock_hist && !$is_req_hist) ? 'active' : '' ?> d-flex align-items-center justify-content-center gap-2" id="office-req-tab" data-bs-toggle="tab" data-bs-target="#office-req" type="button">
                     <span><i class="fa-solid fa-cart-shopping me-1"></i> Office Orders</span>
                     <span class="badge rounded-pill bg-light text-dark fw-bold" id="office-tab-badge"><?= $office_pending_count ?></span>
                 </button>
@@ -355,7 +404,13 @@ $is_hist_active = isset($_GET['stock_cat']) || isset($_GET['stock_time']);
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link <?= $is_hist_active ? 'active' : '' ?> d-flex align-items-center justify-content-center gap-2" id="stock-hist-tab" data-bs-toggle="tab" data-bs-target="#stock-hist" type="button">
+                <button class="nav-link <?= $is_req_hist ? 'active' : '' ?> d-flex align-items-center justify-content-center gap-2" id="user-req-hist-tab" data-bs-toggle="tab" data-bs-target="#user-req-hist" type="button">
+                    <span><i class="fa-solid fa-list-check me-1"></i> Request Orders History</span>
+                    <span class="badge rounded-pill bg-primary text-white fw-bold"><?= count($all_history_requests) ?></span>
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link <?= $is_stock_hist ? 'active' : '' ?> d-flex align-items-center justify-content-center gap-2" id="stock-hist-tab" data-bs-toggle="tab" data-bs-target="#stock-hist" type="button">
                     <span><i class="fa-solid fa-clock-rotate-left me-1"></i> Stock Update History</span>
                     <span class="badge rounded-pill bg-dark text-white fw-bold"><?= $stock_history ? $stock_history->num_rows : 0 ?></span>
                 </button>
@@ -365,7 +420,7 @@ $is_hist_active = isset($_GET['stock_cat']) || isset($_GET['stock_time']);
 
     <div class="tab-content" id="adminTabsContent">
         <!-- Tab 1: Office Requests -->
-        <div class="tab-pane fade <?= !$is_hist_active ? 'show active' : '' ?>" id="office-req">
+        <div class="tab-pane fade <?= (!$is_stock_hist && !$is_req_hist) ? 'show active' : '' ?>" id="office-req">
             <div class="card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-box-open text-logo-blue me-2"></i>Pending Office Supply Orders</h5>
@@ -460,8 +515,99 @@ $is_hist_active = isset($_GET['stock_cat']) || isset($_GET['stock_time']);
             </div>
         </div>
 
-        <!-- Tab 3: Stock Update History -->
-        <div class="tab-pane fade <?= $is_hist_active ? 'show active' : '' ?>" id="stock-hist">
+        <!-- Tab 3: Request Orders History -->
+        <div class="tab-pane fade <?= $is_req_hist ? 'show active' : '' ?>" id="user-req-hist">
+            <div class="card p-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-clock-rotate-left text-logo-blue me-2"></i>All User Request Orders History</h5>
+                    <form method="GET" class="d-flex gap-2 align-items-center">
+                        <select name="req_cat" class="form-select form-select-sm fw-semibold" onchange="this.form.submit()">
+                            <option value="all" <?= $req_hist_cat === 'all' ? 'selected' : '' ?>>All Categories</option>
+                            <option value="office" <?= $req_hist_cat === 'office' ? 'selected' : '' ?>>Office Supplies Only</option>
+                            <option value="maintenance" <?= $req_hist_cat === 'maintenance' ? 'selected' : '' ?>>Maintenance Supplies Only</option>
+                        </select>
+                        <select name="req_status" class="form-select form-select-sm fw-semibold" onchange="this.form.submit()">
+                            <option value="all" <?= $req_hist_status === 'all' ? 'selected' : '' ?>>All Statuses</option>
+                            <option value="Approved" <?= $req_hist_status === 'Approved' ? 'selected' : '' ?>>Approved Only</option>
+                            <option value="Pending" <?= $req_hist_status === 'Pending' ? 'selected' : '' ?>>Pending Only</option>
+                            <option value="Rejected" <?= $req_hist_status === 'Rejected' ? 'selected' : '' ?>>Rejected Only</option>
+                        </select>
+                    </form>
+                </div>
+                <div class="table-responsive table-container">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Category</th>
+                                <th>Requisitioner</th>
+                                <th>Dept</th>
+                                <th>Total Items</th>
+                                <th>Status</th>
+                                <th>Date Placed</th>
+                                <th class="text-end">Print / Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (!empty($all_history_requests)): ?>
+                                <?php foreach ($all_history_requests as $req): ?>
+                                    <?php
+                                    $st = $req['status'];
+                                    if ($st === 'Approved') {
+                                        $status_badge = '<span class="badge bg-success-subtle text-success border border-success-subtle fw-bold"><i class="fa-solid fa-circle-check me-1"></i>Approved</span>';
+                                    } elseif ($st === 'Rejected') {
+                                        $status_badge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle fw-bold"><i class="fa-solid fa-circle-xmark me-1"></i>Rejected</span>';
+                                    } else {
+                                        $status_badge = '<span class="badge bg-warning-subtle text-warning border border-warning-subtle fw-bold text-dark"><i class="fa-solid fa-clock me-1"></i>Pending</span>';
+                                    }
+
+                                    $cat_badge = ($req['type'] === 'maintenance')
+                                        ? '<span class="badge bg-warning text-dark border"><i class="fa-solid fa-wrench me-1"></i>Maintenance</span>'
+                                        : '<span class="badge bg-primary text-white"><i class="fa-solid fa-box-open me-1"></i>Office</span>';
+
+                                    $print_link = ($req['type'] === 'maintenance')
+                                        ? 'print_maintenance_request.php?group_id=' . urlencode($req['request_group_id'])
+                                        : 'print_request.php?group_id=' . urlencode($req['request_group_id']);
+                                    ?>
+                                    <tr>
+                                        <td class="fw-bold text-logo-blue">#<?= htmlspecialchars($req['request_group_id']) ?></td>
+                                        <td><?= $cat_badge ?></td>
+                                        <td class="fw-semibold text-dark"><?= htmlspecialchars($req['requisitioner_name']) ?></td>
+                                        <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($req['department']) ?></span></td>
+                                        <td><span class="badge bg-secondary rounded-pill"><?= $req['total_items'] ?> item(s)</span></td>
+                                        <td><?= $status_badge ?></td>
+                                        <td class="small text-secondary"><?= date('M d, Y h:i A', strtotime($req['created_at'])) ?></td>
+                                        <td class="text-end">
+                                            <?php if ($st === 'Approved'): ?>
+                                                <a href="<?= $print_link ?>" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold">
+                                                    <i class="fa-solid fa-print me-1"></i> Print Voucher
+                                                </a>
+                                            <?php elseif ($st === 'Pending'): ?>
+                                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" onclick="openViewRequestModal('<?= htmlspecialchars($req['request_group_id'], ENT_QUOTES) ?>', '<?= $req['type'] ?>')">
+                                                    <i class="fa-solid fa-pen-to-square me-1"></i> Review
+                                                </button>
+                                            <?php else: ?>
+                                                <span class="text-muted small">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">
+                                        <i class="fa-solid fa-folder-open fs-3 d-block mb-2 text-secondary"></i>
+                                        Walang nakatagong kasaysayan ng mga order requests.
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Stock Update History -->
+        <div class="tab-pane fade <?= $is_stock_hist ? 'show active' : '' ?>" id="stock-hist">
             <div class="card p-4">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                     <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-clock-rotate-left text-logo-blue me-2"></i>Stock Update & Inbound History</h5>
